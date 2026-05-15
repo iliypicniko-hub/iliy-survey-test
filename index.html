@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- v2 -->
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -674,7 +674,11 @@ function renderOutfitContent(){
   m.innerHTML=`<div class="fade-in">
     <div class="section-badge outfit">👗 衣装レンタル</div>
     <div class="page-heading">衣装の選択</div>
-    <div class="page-desc">複数コーデ選択可能です。<br>2コーデ目以降は1コーデにつき <strong>¥3,300</strong> の追加料金となります。</div>
+    <div class="notice-box" style="margin-bottom:20px">
+      プラン内ではメインで撮影される方の<strong>1コーデ分のみ無料</strong>でレンタルできます（例：トップス1着＋パンツ1着）。<br>
+      別でもう1コーデ追加されたい場合は、別途 <strong>¥3,300</strong> となります。<br>
+      追加をご希望の場合は、そのコーデも選択した上で補足メモにご記入ください。
+    </div>
 
     <div class="field">
       <label>サイズカテゴリ</label>
@@ -694,16 +698,15 @@ function renderOutfitContent(){
     </div>
 
     ${outfitData.selected.length>0?`<div class="field">
-      <label>選択中の衣装（${outfitData.selected.length}コーデ）</label>
+      <label>選択中の衣装（${outfitData.selected.length}着）</label>
       <div class="selected-outfits">
-        ${outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?`<div class="selected-outfit-chip">第${i+1}コーデ：${o.name}</div>`:''}).join('')}
+        ${outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?`<div class="selected-outfit-chip">${o.name}</div>`:''}).join('')}
       </div>
-      ${outfitData.selected.length>=2?`<div style="font-size:12px;color:var(--accent);margin-top:8px">※ 2コーデ目以降 ¥3,300/コーデの追加料金となります</div>`:''}
     </div>`:''}
 
     <div class="field">
       <label>補足メモ<span class="opt">任意</span></label>
-      <textarea id="outfit-memo" placeholder="サイズ感のご要望や気になる衣装があればご自由にお書きください。">${outfitData.memo||''}</textarea>
+      <textarea id="outfit-memo" placeholder="2コーデ目追加をご希望の場合はこちらにご記入ください。その他サイズ感のご要望なども自由にお書きください。">${outfitData.memo||''}</textarea>
     </div>
     <div class="nav">
       <button class="btn-back" onclick="renderSelector()">← 戻る</button>
@@ -734,17 +737,16 @@ function toggleOutfit(id){
 
 function confirmOutfit(){
   outfitData.memo=document.getElementById('outfit-memo')?.value||'';
-  const selectedNames=outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?`第${i+1}コーデ：${o.name}`:''}).filter(Boolean);
+  const selectedNames=outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?o.name:''}).filter(Boolean);
   document.getElementById('form-main').innerHTML=`<div class="fade-in">
     <div class="section-badge outfit">👗 衣装レンタル</div>
     <div class="page-heading">内容の確認</div>
     <div class="confirm-block"><div class="confirm-block-title outfit">選択した衣装</div>
       <div class="confirm-row"><div class="confirm-key">お名前</div><div class="confirm-val">${commonData.name}</div></div>
       <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${commonData.shootDate}</div></div>
-      <div class="confirm-row"><div class="confirm-key">衣装（${outfitData.selected.length}コーデ）</div><div class="confirm-val">${selectedNames.join('　/　')||'なし'}</div></div>
+      <div class="confirm-row"><div class="confirm-key">選択衣装（${outfitData.selected.length}着）</div><div class="confirm-val">${selectedNames.join('、')||'なし'}</div></div>
       ${outfitData.memo?`<div class="confirm-row"><div class="confirm-key">補足メモ</div><div class="confirm-val">${outfitData.memo}</div></div>`:''}
     </div>
-    ${outfitData.selected.length>=2?`<div style="font-size:12px;color:var(--accent);padding:0 4px 16px">※ 2コーデ目以降 ¥3,300/コーデの追加料金となります</div>`:''}
     <div class="nav"><button class="btn-back" onclick="renderOutfitContent()">← 戻る</button><button class="btn-submit" id="btn-submit" onclick="submitSection('outfit')">送信する</button></div>
   </div>`;
   window.scrollTo({top:0,behavior:'smooth'});
@@ -768,7 +770,7 @@ async function submitSection(section){
       Object.assign(payload,{...hairFormData,hairOptionType,fHairImages:fhi,fMakeupImages:fmi,fLengthImages:fli,mHairImages:mhi,mLengthImages:mli});
     }
     if(section==='outfit'){
-      const selectedNames=outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?`第${i+1}コーデ：${o.name}`:''}).filter(Boolean);
+      const selectedNames=outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?o.name:''}).filter(Boolean);
       Object.assign(payload,{outfits:selectedNames,memo:outfitData.memo});
     }
     const result=await apiPost(payload);
