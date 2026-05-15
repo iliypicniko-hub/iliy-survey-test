@@ -332,7 +332,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbz4z0oKLZepMmAmuaRElTsAKI2XmkVIi6M90rbK4za4fLlf80Gi-YSox_zsfsUwNwM/exec';
+const API='https://script.google.com/macros/s/AKfycbzVoZ9PiZnfLVpgxX0IOUrcBnjHwsk3zfUakueiYPmlr0IIFJDTLscsU6BXpnRWz7s/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -432,7 +432,8 @@ function rg(name,opts,col,locked){
     opts.map(o=>`<label class="choice-card"><input type="radio" name="${name}" value="${o}"${locked?' disabled':''}><div class="choice-label"><div class="choice-dot"></div>${o}</div></label>`).join('')+'</div>';
 }
 
-function startSections(){
+// ★ 修正: オプション選択を即座にGASに保存してから次へ進む
+async function startSections(){
   const flower=document.querySelector('input[name="has-flower"]:checked')?.value;
   const hair=document.querySelector('input[name="has-hair"]:checked')?.value;
   const outfit=document.querySelector('input[name="has-outfit"]:checked')?.value;
@@ -443,6 +444,23 @@ function startSections(){
   if(!hair&&!sectionStatus.hair)show('err-hair');else hide('err-hair');
   if(!outfit&&!sectionStatus.outfit)show('err-outfit');else hide('err-outfit');
   if(!ok)return;
+
+  // ★ オプション内容をGASのcustomersシートに即保存
+  const flowerOpt = flower==='花束を注文している' ? 'flower' : 'none';
+  const hairOpt   = hair==='女性ヘアセット＆メイク' ? 'female'
+                  : hair==='男性ヘアセット'          ? 'male'
+                  : hair==='両方（女性＋男性）'       ? 'both'
+                  : 'none';
+  // 非同期で保存（エラーでも先に進む）
+  try{
+    await apiPost({action:'updateOptions', cid, flowerOption:flowerOpt, hairOption:hairOpt});
+    // ローカルのcustomerオブジェクトも更新しておく
+    customer.flowerOption = flowerOpt;
+    customer.hairOption   = hairOpt;
+  }catch(e){
+    console.warn('updateOptions failed:', e);
+  }
+
   sectionsToFill=[];
   if(flower==='花束を注文している'&&!sectionStatus.flower)sectionsToFill.push('flower');
   if(hair&&hair!=='ヘアメイクなし'&&!sectionStatus.hair){
@@ -460,7 +478,6 @@ function startSections(){
 // ── 共通情報（最初に表示）──
 function renderCommon(){
   updateProgressEmpty();
-  // 全セクション完了チェック（お客様が選んだオプションに基づく）
   const needsFlower=customer.flowerOption&&customer.flowerOption!=='none';
   const needsHair=customer.hairOption&&customer.hairOption!=='none';
   const allDone=(!needsFlower||sectionStatus.flower)&&(!needsHair||sectionStatus.hair)&&sectionStatus.outfit;
@@ -761,14 +778,12 @@ function switchCategory(cat){
 }
 
 function toggleOutfit(id){
-  const card=document.getElementById('oc-'+id);
   const idx=outfitData.selected.indexOf(id);
   if(idx>=0){
     outfitData.selected.splice(idx,1);
   }else{
     outfitData.selected.push(id);
   }
-  // re-render to update badges
   outfitData.memo=document.getElementById('outfit-memo')?.value||outfitData.memo||'';
   renderOutfitContent();
 }
@@ -936,7 +951,7 @@ async function createCustomer(){
   if(!name){alert('お客様名を入力してください');return;}
   if(!shootDate){alert('撮影日を入力してください');return;}
   try{
-    const r=await apiPost({action:'createCustomer',name,shootDate,flowerOption:'none',hairOption:'none'});
+    const r=await apiPost({action:'createCustomer',name,shootDate});
     if(!r.ok)throw new Error(r.error);
     const url=location.origin+location.pathname+'?cid='+r.cid;
     document.getElementById('created-url-text').textContent=url;
@@ -1270,14 +1285,12 @@ const COLOR_MAP = {
 };
 
 function selectColor(colorKey, colorName, textKey) {
-  // Update button UI
   Object.keys(COLOR_MAP).forEach(n => {
     const btn = document.getElementById('cp-'+colorKey+'-'+n);
     if(btn) { btn.style.boxShadow = ''; btn.style.transform = ''; }
   });
   const selected = document.getElementById('cp-'+colorKey+'-'+colorName);
   if(selected) { selected.style.boxShadow = '0 0 0 3px var(--accent)'; selected.style.transform = 'scale(1.1)'; }
-  // Store selection temporarily
   if(!window._colorSelections) window._colorSelections = {};
   window._colorSelections[colorKey] = colorName;
 }
@@ -1297,10 +1310,8 @@ async function saveSettingField(key, colorKey) {
   const value = editor.innerHTML;
   const resultEl = document.getElementById('save-result-'+key);
   try {
-    // Save text
     const r = await apiPost({action:'saveSetting', key, value});
     if(!r.ok) throw new Error(r.error);
-    // Save color if applicable
     if(colorKey && window._colorSelections && window._colorSelections[colorKey]) {
       await apiPost({action:'saveSetting', key:colorKey, value:window._colorSelections[colorKey]});
     }
@@ -1311,7 +1322,6 @@ async function saveSettingField(key, colorKey) {
   }
 }
 
-// Keep backward compat
 async function saveSimpleSetting(key){
   const el=document.getElementById('setting-'+key);if(!el)return;
   const value=el.value;
@@ -1326,7 +1336,7 @@ async function saveSetting(key) { await saveSettingField(key, null); }
 
 
 // ══ UPLOAD TAB ══
-let uploadQueue = []; // {file, name, category, status, url}
+let uploadQueue = [];
 
 function handleUploadFiles(e) {
   const files = Array.from(e.target.files);
@@ -1334,11 +1344,9 @@ function handleUploadFiles(e) {
     uploadQueue.push({ file: f, name: f.name.replace(/\.[^.]+$/, ''), category: '80cm', status: 'pending', url: '' });
   });
   renderUploadItems();
-  // reset input so same file can be added again
   e.target.value = '';
 }
 
-// drag & drop
 document.addEventListener('DOMContentLoaded', () => {
   const dz = document.getElementById('drop-zone');
   if (!dz) return;
@@ -1357,7 +1365,6 @@ function renderUploadItems() {
   if (!wrap) return;
   if (uploadQueue.length === 0) { wrap.innerHTML = ''; return; }
 
-  const allDone = uploadQueue.every(i => i.status === 'done');
   const anyPending = uploadQueue.some(i => i.status === 'pending');
 
   wrap.innerHTML = uploadQueue.map((item, idx) => {
@@ -1401,14 +1408,13 @@ function renderUploadItems() {
     </div>`;
   }).join('');
 
-  // set preview images
   uploadQueue.forEach((item, idx) => {
     if (!item.previewUrl && item.file && item.status === 'pending') {
       const reader = new FileReader();
       reader.onload = e => {
         item.previewUrl = e.target.result;
-        const img = document.querySelector(`#uitem-${idx} .upload-item-thumb img`);
-        if (!img) { const t = document.querySelector(`#uitem-${idx} .upload-item-thumb`); if(t) t.innerHTML = `<img src="${e.target.result}">`; }
+        const t = document.querySelector(`#uitem-${idx} .upload-item-thumb`);
+        if(t) t.innerHTML = `<img src="${e.target.result}">`;
       };
       reader.readAsDataURL(item.file);
     }
