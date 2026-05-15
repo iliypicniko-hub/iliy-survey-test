@@ -332,7 +332,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbyRJ9TULeeZeBkHoNYregpjRgl31bLVVVZGlrZ6BKteP7OUcQSTfsDGVD9HyukWE4o4/exec';
+const API='https://script.google.com/macros/s/AKfycbwjaF7esq-B3yLBYCNJvZHrpRaoC46z6GQ1EQD7Yg2U36QBc-ge9F-sQ8iKvF7o52nW/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -802,7 +802,7 @@ async function submitSection(section){
   try{
     const readFile=f=>new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);});
     const toB64=async key=>Promise.all(PS[key].map(readFile));
-    let payload={action:'submitSection',section,cid,name:commonData.name,nameMale:commonData.nameMale,shootDate:commonData.shootDate};
+    let payload={action:'submitSection',section,cid,name:commonData.name,nameMale:commonData.nameMale,shootDate:commonData.shootDate,flowerOption:customer.flowerOption,hairOption:customer.hairOption};
     if(section==='flower'){
       const[pi,oi]=await Promise.all([toB64('fl-person'),toB64('fl-outfit')]);
       Object.assign(payload,{...flowerData,flowerPersonImages:pi,flowerOutfitImages:oi});
@@ -921,8 +921,6 @@ function showAdminDash(){
       <div class="create-fields">
         <div class="create-field"><label>お客様名<span style="color:var(--error)">必須</span></label><input type="text" id="new-name" placeholder="山田 花子"></div>
         <div class="create-field"><label>撮影日<span style="color:var(--error)">必須</span></label><input type="date" id="new-date"></div>
-        <div class="create-field"><label>花束オプション</label><select id="new-flower"><option value="none">花束なし</option><option value="flower">花束あり</option></select></div>
-        <div class="create-field"><label>ヘアメイクオプション</label><select id="new-hair"><option value="none">ヘアメイクなし</option><option value="female">女性ヘアセット＆メイク</option><option value="male">男性ヘアセット</option><option value="both">両方（女性＋男性）</option></select></div>
       </div>
       <button class="btn-create" onclick="createCustomer()">URLを発行する</button>
       <div class="created-url-box" id="created-url-box">
@@ -939,19 +937,17 @@ function showAdminDash(){
 async function createCustomer(){
   const name=document.getElementById('new-name')?.value.trim();
   const shootDate=document.getElementById('new-date')?.value;
-  const flowerOption=document.getElementById('new-flower')?.value||'none';
-  const hairOption=document.getElementById('new-hair')?.value||'none';
   if(!name){alert('お客様名を入力してください');return;}
   if(!shootDate){alert('撮影日を入力してください');return;}
   try{
-    const r=await apiPost({action:'createCustomer',name,shootDate,flowerOption,hairOption});
+    const r=await apiPost({action:'createCustomer',name,shootDate,flowerOption:'none',hairOption:'none'});
     if(!r.ok)throw new Error(r.error);
     const url=location.origin+location.pathname+'?cid='+r.cid;
     document.getElementById('created-url-text').textContent=url;
     document.getElementById('created-url-box').classList.add('show');
     document.getElementById('new-name').value='';
     document.getElementById('new-date').value='';
-    allCustomers.unshift({id:r.cid,name,shootDate,flowerOption,hairOption,sectionSentStatus:{},completed:false,copiedSections:{},createdAt:new Date().toString()});
+    allCustomers.unshift({id:r.cid,name,shootDate,flowerOption:'none',hairOption:'none',sectionSentStatus:{},completed:false,copiedSections:{},createdAt:new Date().toString()});
     document.getElementById('admin-sub').textContent='全'+allCustomers.length+'件';
   }catch(e){alert('URL発行に失敗しました。');}
 }
