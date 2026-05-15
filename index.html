@@ -37,7 +37,7 @@
   .section-badge.flower{background:var(--flower-light);color:var(--flower);border:1px solid var(--flower-border);}
   .section-badge.hair-f{background:#FBEAF0;color:#993556;border:1px solid #ED93B1;}
   .section-badge.hair-m{background:#E6F1FB;color:#185FA5;border:1px solid #85B7EB;}
-  .section-badge.prop{background:var(--prop-light);color:var(--prop);border:1px solid var(--prop-border);}
+  .section-badge.outfit{background:var(--prop-light);color:var(--prop);border:1px solid var(--prop-border);}
   .notice-box{background:var(--accent-light);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px;font-size:12px;line-height:1.8;margin-bottom:24px;}
   .notice-box strong{color:var(--accent);font-weight:500;}
   .notice-box.flower-n{background:var(--flower-light);border-left-color:var(--flower);}
@@ -48,7 +48,7 @@
   .field label{display:block;font-size:13px;font-weight:500;margin-bottom:8px;}
   .req{color:var(--accent);margin-left:4px;font-size:10px;}
   .opt{color:var(--muted);margin-left:4px;font-size:10px;font-weight:300;}
-  input[type=text],input[type=date],textarea,select{width:100%;background:var(--warm-white);border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:300;color:var(--dark);outline:none;transition:border-color .2s;}
+  input[type=text],input[type=date],textarea{width:100%;background:var(--warm-white);border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:300;color:var(--dark);outline:none;transition:border-color .2s;}
   input[type=text]:focus,input[type=date]:focus,textarea:focus{border-color:var(--accent);}
   textarea{resize:vertical;min-height:90px;line-height:1.7;}
   .radio-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
@@ -61,6 +61,21 @@
   .choice-dot{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;transition:all .2s;display:flex;align-items:center;justify-content:center;}
   .choice-card input:checked+.choice-label .choice-dot{border-color:var(--accent);background:var(--accent);}
   .choice-card input:checked+.choice-label .choice-dot::after{content:'';width:5px;height:5px;border-radius:50%;background:white;}
+  /* category tabs */
+  .cat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .cat-tab{padding:7px 16px;border-radius:20px;border:1.5px solid var(--border);background:var(--warm-white);font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;}
+  .cat-tab.active{border-color:var(--prop);background:var(--prop-light);color:var(--prop);}
+  /* outfit grid */
+  .outfit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .outfit-card{position:relative;cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid var(--border);transition:all .2s;}
+  .outfit-card.selected{border-color:var(--prop);box-shadow:0 0 0 2px var(--prop-light);}
+  .outfit-img-wrap{aspect-ratio:3/4;background:#f0f0ec;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .outfit-img-wrap img{width:100%;height:100%;object-fit:cover;}
+  .outfit-label-text{padding:8px 10px;font-size:11px;color:var(--dark);background:var(--warm-white);text-align:center;line-height:1.4;}
+  .outfit-check{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:2px solid white;background:transparent;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;transition:all .2s;}
+  .outfit-card.selected .outfit-check{background:var(--prop);border-color:var(--prop);}
+  .outfit-count-badge{position:absolute;top:6px;left:6px;width:20px;height:20px;border-radius:50%;background:var(--prop);color:white;font-size:10px;font-weight:500;display:none;align-items:center;justify-content:center;}
+  .outfit-card.selected .outfit-count-badge{display:flex;}
   /* upload */
   .upload-area{border:1.5px dashed var(--border);border-radius:10px;padding:20px 16px;text-align:center;background:var(--warm-white);cursor:pointer;transition:all .2s;position:relative;}
   .upload-area:hover{border-color:var(--accent);background:var(--accent-light);}
@@ -72,28 +87,6 @@
   .photo-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;position:relative;border:1px solid var(--border);}
   .photo-thumb img{width:100%;height:100%;object-fit:cover;}
   .photo-remove{position:absolute;top:4px;right:4px;width:20px;height:20px;background:rgba(0,0,0,.5);border-radius:50%;border:none;color:white;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-  /* outfit grid */
-  .outfit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-  .outfit-card{position:relative;cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid var(--border);transition:all .2s;}
-  .outfit-card input{position:absolute;opacity:0;width:0;height:0;}
-  .outfit-card.selected{border-color:var(--prop);box-shadow:0 0 0 2px var(--prop-light);}
-  .outfit-img-wrap{aspect-ratio:3/4;background:#f0f0ec;display:flex;align-items:center;justify-content:center;}
-  .outfit-img-wrap img{width:100%;height:100%;object-fit:cover;}
-  .outfit-label-text{padding:8px 10px;font-size:11px;color:var(--dark);background:var(--warm-white);text-align:center;line-height:1.4;}
-  .outfit-check{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:2px solid white;background:transparent;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;transition:all .2s;}
-  .outfit-card.selected .outfit-check{background:var(--prop);border-color:var(--prop);}
-  /* prop grid */
-  .prop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  .prop-card{position:relative;cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid var(--border);transition:all .2s;}
-  .prop-card input{position:absolute;opacity:0;width:0;height:0;}
-  .prop-card.selected{border-color:var(--prop);box-shadow:0 0 0 2px var(--prop-light);}
-  .prop-img-wrap{aspect-ratio:1;background:#f0f0ec;display:flex;align-items:center;justify-content:center;}
-  .prop-img-wrap img{width:100%;height:100%;object-fit:cover;}
-  .prop-label-text{padding:6px 8px;font-size:11px;color:var(--dark);background:var(--warm-white);text-align:center;line-height:1.4;}
-  .prop-check{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;border:2px solid white;background:transparent;display:flex;align-items:center;justify-content:center;font-size:10px;color:white;transition:all .2s;}
-  .prop-card.selected .prop-check{background:var(--prop);border-color:var(--prop);}
-  .count-info{font-size:12px;color:var(--muted);margin-bottom:10px;}
-  .count-info span{font-weight:500;color:var(--prop);}
   /* nav */
   .nav{display:flex;gap:10px;margin-top:32px;}
   .btn-back{flex:0 0 auto;padding:13px 18px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s;}
@@ -108,11 +101,14 @@
   .confirm-block-title{background:var(--accent-light);padding:9px 15px;font-size:11px;font-weight:500;color:var(--accent);letter-spacing:.08em;border-bottom:1px solid var(--border);}
   .confirm-block-title.flower{background:var(--flower-light);color:var(--flower);}
   .confirm-block-title.male{background:#E6F1FB;color:#185FA5;}
-  .confirm-block-title.prop{background:var(--prop-light);color:var(--prop);}
+  .confirm-block-title.outfit{background:var(--prop-light);color:var(--prop);}
   .confirm-row{padding:10px 15px;display:flex;gap:12px;border-bottom:1px solid var(--border);font-size:13px;}
   .confirm-row:last-child{border-bottom:none;}
   .confirm-key{color:var(--muted);flex:0 0 130px;font-size:12px;}
   .confirm-val{color:var(--dark);flex:1;line-height:1.6;}
+  /* selected outfits preview */
+  .selected-outfits{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .selected-outfit-chip{display:flex;align-items:center;gap:6px;background:var(--prop-light);border:1px solid var(--prop-border);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--prop);}
   /* section done */
   .section-done-card{background:var(--warm-white);border:1px solid #8DC86A;border-radius:12px;padding:16px 18px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;}
   .section-done-icon{width:36px;height:36px;border-radius:50%;background:#EAF3DE;border:1.5px solid #8DC86A;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
@@ -132,6 +128,9 @@
   .error-msg{font-size:12px;color:var(--error);margin-top:6px;display:none;}
   .error-msg.show{display:block;}
   .resume-banner{background:#EAF3DE;border:1px solid #8DC86A;border-radius:10px;padding:12px 16px;font-size:13px;color:#2A5A18;margin-bottom:18px;line-height:1.7;}
+  /* loading skeleton */
+  .skeleton{background:linear-gradient(90deg,#f0ebe4 25%,#faf7f2 50%,#f0ebe4 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
   /* ADMIN */
   .admin-wrap{max-width:740px;margin:0 auto;padding:24px 20px 60px;}
   .loading-box{text-align:center;padding:60px 0;color:var(--muted);font-size:14px;}
@@ -147,7 +146,6 @@
   .dash-sub{font-size:11px;color:var(--muted);}
   .list-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
   .btn-back-list{padding:8px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;}
-  .btn-back-list:hover{border-color:var(--muted);color:var(--dark);}
   .list-title{font-size:16px;font-weight:500;}
   .admin-card{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px;}
   .admin-card-head{background:var(--accent-light);padding:13px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
@@ -158,10 +156,9 @@
   .admin-sec-title.flower{color:var(--flower);}
   .admin-sec-title.female{color:#993556;}
   .admin-sec-title.male{color:#185FA5;}
-  .admin-sec-title.prop{color:var(--prop);}
+  .admin-sec-title.outfit{color:var(--prop);}
   .admin-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 20px;font-size:13px;margin-bottom:10px;}
   .admin-fl{font-size:11px;color:var(--muted);margin-bottom:2px;}
-  /* 写真サムネイル（管理側・遅延読み込み） */
   .photo-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
   .photo-thumb-sm{width:72px;height:72px;border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer;flex-shrink:0;}
   .photo-thumb-sm img{width:100%;height:100%;object-fit:cover;}
@@ -188,7 +185,6 @@
   .section-url-row{margin-bottom:10px;}
   .section-url-row:last-child{margin-bottom:0;}
   .section-url-label{font-size:11px;color:var(--dark);font-weight:500;margin-bottom:4px;}
-  .section-url-sub{font-size:10px;color:var(--muted);margin-bottom:4px;}
   /* salon */
   .salon-wrap-inner{max-width:620px;margin:0 auto;padding:24px 20px 60px;}
   .salon-card{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
@@ -201,7 +197,7 @@
   .salon-sec-title.flower{color:var(--flower);}
   .salon-sec-title.female{color:#993556;}
   .salon-sec-title.male{color:#185FA5;}
-  .salon-sec-title.prop{color:var(--prop);}
+  .salon-sec-title.outfit{color:var(--prop);}
   .salon-sec-title.common{color:var(--accent);}
   .salon-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;}
   .salon-fl{color:var(--muted);font-size:11px;margin-bottom:3px;}
@@ -209,7 +205,6 @@
   .salon-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
   .salon-photo{aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);cursor:pointer;}
   .salon-photo img{width:100%;height:100%;object-fit:cover;}
-  /* lightbox */
   .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;}
   .lightbox.open{display:flex;}
   .lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;}
@@ -221,8 +216,6 @@
   <div class="spinner"></div>
   <div class="sending-text" id="sending-text">送信中です…</div>
 </div>
-
-<!-- CLIENT -->
 <div id="client-app">
   <div class="header">
     <div class="header-title">iliy 事前アンケート</div>
@@ -231,8 +224,6 @@
   <div class="progress-wrap"><div class="progress-steps" id="progress-steps"></div></div>
   <div class="main" id="form-main"></div>
 </div>
-
-<!-- ADMIN -->
 <div id="admin-app" style="display:none">
   <div class="header">
     <div class="header-title">管理画面 — 回答一覧</div>
@@ -240,8 +231,6 @@
   </div>
   <div class="admin-wrap" id="admin-wrap"><div class="loading-box">読み込み中…</div></div>
 </div>
-
-<!-- SALON -->
 <div id="salon-app" style="display:none">
   <div class="header">
     <div class="header-title" id="salon-header-title">担当者様へ</div>
@@ -249,82 +238,63 @@
   </div>
   <div class="salon-wrap-inner" id="salon-wrap"><div class="loading-box">読み込み中…</div></div>
 </div>
-
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <span class="lightbox-close">✕</span>
   <img id="lightbox-img" src="">
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbxQIB07cNrTmSBQtQIn5lB3Vo-n128dXD-5Xtqu428vZgeAdjGCx_-gGfWwT4DSuUcM/exec';
+const API='https://script.google.com/macros/s/AKfycbyRnbKOhCZq5scSFbboASN_xAHBxxgwdbbid9G3BuB_KAloii9JmfNnud3-IxKZq50B/exec';
+const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
-const DUMMY = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23e8e0d5"/><text x="50%25" y="50%25" font-family="sans-serif" font-size="13" fill="%237a7570" dominant-baseline="middle" text-anchor="middle">準備中</text></svg>';
-
-const OUTFITS = [
-  {id:'o1',label:'ドレス A（白）',img:DUMMY},
-  {id:'o2',label:'ドレス B（クリーム）',img:DUMMY},
-  {id:'o3',label:'ドレス C（パープル）',img:DUMMY},
-  {id:'o4',label:'ドレス D（ブルー）',img:DUMMY},
-  {id:'o5',label:'振袖 A（赤）',img:DUMMY},
-  {id:'o6',label:'振袖 B（ピンク）',img:DUMMY},
-];
-const PROPS = [
-  {id:'p1',label:'ティアラ',img:DUMMY},
-  {id:'p2',label:'パールネックレス',img:DUMMY},
-  {id:'p3',label:'レース手袋',img:DUMMY},
-  {id:'p4',label:'ヘッドドレス',img:DUMMY},
-  {id:'p5',label:'ファーショール',img:DUMMY},
-  {id:'p6',label:'フラワーコサージュ',img:DUMMY},
-  {id:'p7',label:'ブライダルバッグ',img:DUMMY},
-  {id:'p8',label:'サッシュベルト',img:DUMMY},
-  {id:'p9',label:'アームカバー',img:DUMMY},
-  {id:'p10',label:'ケープ',img:DUMMY},
-  {id:'p11',label:'フェザーボレロ',img:DUMMY},
-  {id:'p12',label:'ジュエリーセット',img:DUMMY},
-];
-
-async function apiPost(body){const r=await fetch(API,{method:'POST',body:JSON.stringify(body)});return r.json();}
+async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
 async function apiGet(p){const r=await fetch(API+'?'+new URLSearchParams(p));return r.json();}
 
-// photo store（client side only）
-const PS = {
-  'fl-person':[],'fl-outfit':[],
-  'fh-hair':[],'fh-makeup':[],'fh-length':[],
-  'mh-hair':[],'mh-length':[]
-};
+// photo store
+const PS={'fl-person':[],'fl-outfit':[],'fh-hair':[],'fh-makeup':[],'fh-length':[],'mh-hair':[],'mh-length':[]};
 
-// ── ROUTING ──
-const UP = new URLSearchParams(location.search);
-const pMode = UP.get('mode'), cid = UP.get('cid'), salonId = UP.get('sid'), salonSec = UP.get('section');
+// outfit data (loaded from GAS)
+let OUTFITS=[];
+let outfitLoaded=false;
+
+async function loadOutfits(){
+  if(outfitLoaded)return;
+  try{
+    const r=await apiGet({action:'getOutfits'});
+    if(r.ok)OUTFITS=r.data;
+  }catch(e){}
+  outfitLoaded=true;
+}
+
+// routing
+const UP=new URLSearchParams(location.search);
+const pMode=UP.get('mode'),cid=UP.get('cid'),salonId=UP.get('sid'),salonSec=UP.get('section');
 
 if(salonId){
   document.getElementById('client-app').style.display='none';
   document.getElementById('salon-app').style.display='block';
   initSalon(salonId,salonSec);
-} else if(pMode==='admin'){
+}else if(pMode==='admin'){
   document.getElementById('client-app').style.display='none';
   document.getElementById('admin-app').style.display='block';
   initAdmin();
-} else if(cid){
+}else if(cid){
   initClient(cid);
-} else {
+}else{
   document.getElementById('form-main').innerHTML='<div style="text-align:center;padding:60px 0;font-size:14px;color:var(--muted)">スタジオからお送りした専用URLよりアクセスしてください。</div>';
 }
 
-// ══════════════════════════════════════════════
-// CLIENT FLOW
-// ══════════════════════════════════════════════
-let customer=null, sectionStatus={}, sectionsToFill=[], currentSection='', currentStep=0;
-let commonData={}, flowerData={}, hairFormData={}, propData={outfits:[],props:[]};
-let hairOptionType='';
+// ══ CLIENT ══
+let customer=null,sectionStatus={},sectionsToFill=[],currentSection='',currentStep=0;
+let commonData={},flowerData={},hairFormData={},outfitData={selected:[],memo:''};
+let hairOptionType='',selectedCategory='';
 
 async function initClient(id){
   document.getElementById('client-header-sub').textContent='読み込み中…';
   try{
     const r=await apiGet({action:'getCustomer',cid:id});
-    if(!r.ok) throw new Error(r.error);
-    customer=r.data;
-    sectionStatus=customer.sectionSentStatus||{};
+    if(!r.ok)throw new Error(r.error);
+    customer=r.data;sectionStatus=customer.sectionSentStatus||{};
     document.getElementById('client-header-sub').textContent=customer.name+' 様の事前アンケート';
     renderSelector();
   }catch(e){
@@ -335,9 +305,9 @@ async function initClient(id){
 function renderSelector(){
   updateProgressEmpty();
   const m=document.getElementById('form-main');
-  const allDone=sectionStatus.flower&&sectionStatus.hair&&sectionStatus.prop;
+  const allDone=sectionStatus.flower&&sectionStatus.hair&&sectionStatus.outfit;
   if(allDone){m.innerHTML='<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべての回答が完了しています</h2><p>当日お会いできるのを楽しみにしております。</p></div>';return;}
-  const resume=(sectionStatus.flower||sectionStatus.hair||sectionStatus.prop)?'<div class="resume-banner">✅ 一部の回答はすでに送信済みです。続きから回答できます。</div>':'' ;
+  const resume=(sectionStatus.flower||sectionStatus.hair||sectionStatus.outfit)?'<div class="resume-banner">✅ 一部の回答はすでに送信済みです。続きから回答できます。</div>':'';
   m.innerHTML=`<div class="fade-in">
     ${resume}
     <div class="page-heading">オプションの確認</div>
@@ -353,9 +323,9 @@ function renderSelector(){
       <div class="error-msg" id="err-hair">選択してください</div>
     </div>
     <div class="field">
-      <label>小物レンタルオプション<span class="req">必須</span></label>
-      ${rg('has-prop',['小物レンタルを利用する','小物レンタルは利用しない'],'col1',sectionStatus.prop)}
-      <div class="error-msg" id="err-prop">選択してください</div>
+      <label>衣装レンタルオプション<span class="req">必須</span></label>
+      ${rg('has-outfit',['衣装レンタルを利用する','衣装レンタルは利用しない'],'col1',sectionStatus.outfit)}
+      <div class="error-msg" id="err-outfit">選択してください</div>
     </div>
     <div class="nav"><button class="btn-next" onclick="startSections()">次へ　→</button></div>
   </div>`;
@@ -364,20 +334,19 @@ function renderSelector(){
 function rg(name,opts,col,locked){
   const note=locked?'<span style="color:var(--success);font-size:11px;margin-left:6px">✓ 送信済み</span>':'';
   return note+`<div class="radio-grid ${col||''}" style="${locked?'opacity:.5;pointer-events:none;':''}">`+
-    opts.map(o=>`<label class="choice-card"><input type="radio" name="${name}" value="${o}"${locked?' disabled':''}><div class="choice-label"><div class="choice-dot"></div>${o}</div></label>`).join('')+
-  '</div>';
+    opts.map(o=>`<label class="choice-card"><input type="radio" name="${name}" value="${o}"${locked?' disabled':''}><div class="choice-label"><div class="choice-dot"></div>${o}</div></label>`).join('')+'</div>';
 }
 
 function startSections(){
   const flower=document.querySelector('input[name="has-flower"]:checked')?.value;
   const hair=document.querySelector('input[name="has-hair"]:checked')?.value;
-  const prop=document.querySelector('input[name="has-prop"]:checked')?.value;
+  const outfit=document.querySelector('input[name="has-outfit"]:checked')?.value;
   let ok=true;
   const show=id=>{const e=document.getElementById(id);if(e){e.classList.add('show');ok=false;}};
   const hide=id=>{const e=document.getElementById(id);if(e)e.classList.remove('show');};
   if(!flower&&!sectionStatus.flower)show('err-flower');else hide('err-flower');
   if(!hair&&!sectionStatus.hair)show('err-hair');else hide('err-hair');
-  if(!prop&&!sectionStatus.prop)show('err-prop');else hide('err-prop');
+  if(!outfit&&!sectionStatus.outfit)show('err-outfit');else hide('err-outfit');
   if(!ok)return;
   sectionsToFill=[];
   if(flower==='花束を注文している'&&!sectionStatus.flower)sectionsToFill.push('flower');
@@ -385,24 +354,21 @@ function startSections(){
     sectionsToFill.push('hair');
     hairOptionType=hair==='女性ヘアセット＆メイク'?'female':hair==='男性ヘアセット'?'male':'both';
   }
-  if(prop==='小物レンタルを利用する'&&!sectionStatus.prop)sectionsToFill.push('prop');
+  if(outfit==='衣装レンタルを利用する'&&!sectionStatus.outfit)sectionsToFill.push('outfit');
   if(sectionsToFill.length===0){
     document.getElementById('form-main').innerHTML='<div class="thankyou"><div class="thankyou-icon">✓</div><h2>回答は不要です</h2><p>当日お会いできるのを楽しみにしております。</p></div>';
     return;
   }
-  // 共通情報（名前・撮影日）を最初に聞く
-  currentSection='common';
-  currentStep=0;
-  renderCommon();
+  currentSection='common';currentStep=0;renderCommon();
 }
 
-// ── 共通情報（名前・撮影日）──
+// ── 共通情報 ──
 function renderCommon(){
   updateProgressFlow('common');
   const isBoth=hairOptionType==='both'&&sectionsToFill.includes('hair');
   document.getElementById('form-main').innerHTML=`<div class="fade-in">
     <div class="page-heading">基本情報</div>
-    <div class="page-desc">花束・ヘアメイクなど全ての担当者に共有されます。</div>
+    <div class="page-desc">花束・ヘアメイク・衣装、すべての担当者に共有されます。</div>
     <div class="field">
       <label>${isBoth?'女性のお名前':'お名前'}<span class="req">必須</span></label>
       <input type="text" id="c-name" placeholder="山田 花子" value="${commonData.name||''}">
@@ -416,41 +382,35 @@ function renderCommon(){
     </div>
     <div class="nav">
       <button class="btn-back" onclick="renderSelector()">← 戻る</button>
-      <button class="btn-next" onclick="goCommonNext()">次へ　→</button>
+      <button class="btn-next" onclick="goCommon()">次へ　→</button>
     </div>
   </div>`;
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
-function goCommonNext(){
+function goCommon(){
   commonData.name=document.getElementById('c-name')?.value||'';
   commonData.nameMale=document.getElementById('c-name-male')?.value||'';
   commonData.shootDate=document.getElementById('c-date')?.value||'';
   let ok=true;
-  const show=id=>{const e=document.getElementById(id);if(e){e.classList.add('show');ok=false;}};
-  const hide=id=>{const e=document.getElementById(id);if(e)e.classList.remove('show');};
-  if(!commonData.name)show('err-c-name');else hide('err-c-name');
-  if(hairOptionType==='both'&&sectionsToFill.includes('hair')&&!commonData.nameMale)show('err-c-name-male');else hide('err-c-name-male');
-  if(!commonData.shootDate)show('err-c-date');else hide('err-c-date');
+  if(!commonData.name){document.getElementById('err-c-name')?.classList.add('show');ok=false;}else document.getElementById('err-c-name')?.classList.remove('show');
+  if(hairOptionType==='both'&&sectionsToFill.includes('hair')&&!commonData.nameMale){document.getElementById('err-c-name-male')?.classList.add('show');ok=false;}else document.getElementById('err-c-name-male')?.classList.remove('show');
+  if(!commonData.shootDate){document.getElementById('err-c-date')?.classList.add('show');ok=false;}else document.getElementById('err-c-date')?.classList.remove('show');
   if(!ok)return;
-  currentSection=sectionsToFill[0];
-  currentStep=0;
-  renderCurrentSection();
+  currentSection=sectionsToFill[0];currentStep=0;renderCurrentSection();
 }
-
 function renderCurrentSection(){
   if(currentSection==='flower')renderFlower();
   else if(currentSection==='hair'){hairSteps=buildHairSteps();renderHair();}
-  else if(currentSection==='prop')renderProp();
+  else if(currentSection==='outfit')renderOutfit();
 }
 
 // ── FLOWER ──
-let flowerSteps=['fl-main','fl-photo','fl-confirm'];
+const flowerStepList=['fl-main','fl-photo','fl-confirm'];
 function renderFlower(){
   updateProgressFlow('flower');
-  const s=flowerSteps[currentStep];
+  const s=flowerStepList[currentStep];
   const m=document.getElementById('form-main');
-  if(s==='fl-main') m.innerHTML=`<div class="fade-in">
+  if(s==='fl-main')m.innerHTML=`<div class="fade-in">
     <div class="section-badge flower">🌷 花束オプション</div>
     <div class="page-heading">花束のご要望</div>
     <div class="notice-box flower-n"><strong>🌸 rihでの花束をご希望ありがとうございます✨</strong><br>お客様の雰囲気にあった花束をお作りします。※細かいお花のご指定はできかねますのでご了承ください🙇</div>
@@ -463,9 +423,9 @@ function renderFlower(){
       <label>雰囲気の補足・その他ご希望<span class="opt">任意</span></label>
       <textarea id="fl-note" placeholder="例：淡いピンク系が好き、グリーンを入れてほしい など">${flowerData.note||''}</textarea>
     </div>
-    <div class="nav"><button class="btn-back" onclick="backToSelector()">← 戻る</button><button class="btn-next" onclick="goFlower()">次へ　→</button></div>
+    <div class="nav"><button class="btn-back" onclick="renderSelector()">← 戻る</button><button class="btn-next" onclick="goFlower()">次へ　→</button></div>
   </div>`;
-  else if(s==='fl-photo') m.innerHTML=`<div class="fade-in">
+  else if(s==='fl-photo')m.innerHTML=`<div class="fade-in">
     <div class="section-badge flower">🌷 花束オプション</div>
     <div class="page-heading">写真のアップロード</div>
     <div class="page-desc">お客様の雰囲気に合わせた花束を作るために写真をお送りください。</div>
@@ -473,13 +433,13 @@ function renderFlower(){
     ${uploadField('fl-outfit','②当日のお衣装の写真','衣装が決まっている場合はお送りください。',2,'👗')}
     <div class="nav"><button class="btn-back" onclick="currentStep--;renderFlower()">← 戻る</button><button class="btn-next" onclick="goFlower()">次へ　→</button></div>
   </div>`;
-  else if(s==='fl-confirm') m.innerHTML=`<div class="fade-in">
+  else if(s==='fl-confirm')m.innerHTML=`<div class="fade-in">
     <div class="section-badge flower">🌷 花束オプション</div>
     <div class="page-heading">内容の確認</div>
     <div class="confirm-block"><div class="confirm-block-title flower">花束ご要望</div>
       <div class="confirm-row"><div class="confirm-key">お名前</div><div class="confirm-val">${commonData.name}</div></div>
       <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${commonData.shootDate}</div></div>
-      <div class="confirm-row"><div class="confirm-key">ご希望の雰囲気</div><div class="confirm-val">${flowerData.mood||''}</div></div>
+      <div class="confirm-row"><div class="confirm-key">雰囲気</div><div class="confirm-val">${flowerData.mood||''}</div></div>
       ${flowerData.note?`<div class="confirm-row"><div class="confirm-key">補足</div><div class="confirm-val">${flowerData.note}</div></div>`:''}
       <div class="confirm-row"><div class="confirm-key">普段の写真</div><div class="confirm-val">${PS['fl-person'].length}枚</div></div>
       <div class="confirm-row"><div class="confirm-key">衣装写真</div><div class="confirm-val">${PS['fl-outfit'].length}枚</div></div>
@@ -492,7 +452,7 @@ function renderFlower(){
 function goFlower(){
   if(currentStep===0){
     flowerData.mood=document.querySelector('input[name="fl-mood"]:checked')?.value||flowerData.mood||'';
-    flowerData.note=document.getElementById('fl-note')?.value||flowerData.note||'';
+    flowerData.note=document.getElementById('fl-note')?.value||'';
     if(!flowerData.mood){document.getElementById('err-fl-mood')?.classList.add('show');return;}
     document.getElementById('err-fl-mood')?.classList.remove('show');
   }
@@ -502,38 +462,29 @@ function goFlower(){
 // ── HAIR ──
 let hairSteps=[];
 function buildHairSteps(){
-  const c=['h-basic'];
-  const f=['h-f-hair','h-f-makeup','h-f-photo'];
-  const m=['h-m-hair','h-m-photo'];
+  const c=['h-basic'],f=['h-f-hair','h-f-makeup','h-f-photo'],male=['h-m-hair','h-m-photo'];
   if(hairOptionType==='female')return[...c,...f,'h-confirm'];
-  if(hairOptionType==='male')return[...c,...m,'h-confirm'];
-  return[...c,...f,...m,'h-confirm'];
+  if(hairOptionType==='male')return[...c,...male,'h-confirm'];
+  return[...c,...f,...male,'h-confirm'];
 }
 function renderHair(){
   updateProgressFlow('hair');
-  const s=hairSteps[currentStep];
   const m=document.getElementById('form-main');
-  m.innerHTML=buildHairPage(s);
+  m.innerHTML=buildHairPage(hairSteps[currentStep]);
   window.scrollTo({top:0,behavior:'smooth'});
   ['fh-hair','fh-makeup','fh-length','mh-hair','mh-length'].forEach(k=>renderPreviews(k));
 }
 function buildHairPage(s){
-  const isBoth=hairOptionType==='both';
   switch(s){
-    case 'h-basic': return `<div class="fade-in">
+    case 'h-basic':return`<div class="fade-in">
       <div class="section-badge hair-f">💄 ヘアメイクオプション</div>
       <div class="page-heading">基本確認</div>
-      <div class="notice-box">
-        ご希望のヘア・メイクのイメージ写真をスマホまたはPCにご準備いただいた上でご回答ください。<br><br>
-        <strong>🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。</strong><br><br>
-        <strong>🔶 メイクアイテムのお持ち込みは自由です。</strong>敏感肌の方は普段使用のアイテムをお持ち込みください。<br><br>
-        ＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。
-      </div>
-      <div class="field"><label>確認：お名前</label><div style="padding:11px 13px;background:var(--accent-light);border-radius:8px;font-size:14px">${commonData.name}${commonData.nameMale?' / '+commonData.nameMale:''}</div></div>
-      <div class="field"><label>確認：撮影日</label><div style="padding:11px 13px;background:var(--accent-light);border-radius:8px;font-size:14px">${commonData.shootDate}</div></div>
-      <div class="nav"><button class="btn-back" onclick="backToSelector()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
+      <div class="notice-box"><strong>🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。</strong><br><br><strong>🔶 メイクアイテムのお持ち込みは自由です。</strong>敏感肌の方は普段使用のアイテムをお持ち込みください。<br><br>＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。</div>
+      <div class="field"><label>お名前</label><div style="padding:11px 13px;background:var(--accent-light);border-radius:8px;font-size:14px">${commonData.name}${commonData.nameMale?' / '+commonData.nameMale:''}</div></div>
+      <div class="field"><label>撮影日</label><div style="padding:11px 13px;background:var(--accent-light);border-radius:8px;font-size:14px">${commonData.shootDate}</div></div>
+      <div class="nav"><button class="btn-back" onclick="renderSelector()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
-    case 'h-f-hair': return `<div class="fade-in">
+    case 'h-f-hair':return`<div class="fade-in">
       <div class="section-badge hair-f">👩 女性ヘアについて</div>
       <div class="page-heading">ヘアに関するご質問</div>
       <div class="field"><label>髪の長さ<span class="req">必須</span></label>${radioGroup('f-hair-length',['ショート','ミディアム（肩あたり）','ロング（肩以下）'],1)}<div class="error-msg" id="err-f-length">選択してください</div></div>
@@ -542,16 +493,16 @@ function buildHairPage(s){
       <div class="field"><label>髪質<span class="req">必須</span></label>${radioGroup('f-hair-texture',['硬い','柔らかい','普通'],3)}<div class="error-msg" id="err-f-texture">選択してください</div></div>
       <div class="nav"><button class="btn-back" onclick="currentStep--;renderHair()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
-    case 'h-f-makeup': return `<div class="fade-in">
+    case 'h-f-makeup':return`<div class="fade-in">
       <div class="section-badge hair-f">👩 女性メイクについて</div>
       <div class="page-heading">メイクに関するご質問</div>
       <div class="field"><label>肌質<span class="req">必須</span></label>${radioGroup('f-skin-type',['乾燥肌','脂性肌','混合肌'],3)}<div class="error-msg" id="err-f-skin">選択してください</div></div>
-      <div class="field"><label>肌荒れする化粧品のブランド名・商品名<span class="opt">任意</span></label><input type="text" id="f-allergy" placeholder="例：〇〇ブランドのファンデーション" value="${hairFormData.fAllergyCosm||''}"></div>
+      <div class="field"><label>肌荒れする化粧品<span class="opt">任意</span></label><input type="text" id="f-allergy" placeholder="例：〇〇ブランドのファンデーション" value="${hairFormData.fAllergyCosm||''}"></div>
       <div class="field"><label>撮影当日のコンタクト<span class="req">必須</span></label>${radioGroup('f-contact',['はい（ソフトコンタクト）','はい（ハードコンタクト）','いいえ'],1)}<div class="error-msg" id="err-f-contact">選択してください</div></div>
       <div class="field"><label>ご希望のメイクイメージ<span class="req">必須</span></label>${radioGroup('f-makeup-image',['ナチュラル','エレガント','フェミニン','スタイリッシュ'],2)}<div class="error-msg" id="err-f-makeup">選択してください</div></div>
       <div class="nav"><button class="btn-back" onclick="currentStep--;renderHair()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
-    case 'h-f-photo': return `<div class="fade-in">
+    case 'h-f-photo':return`<div class="fade-in">
       <div class="section-badge hair-f">👩 女性の写真</div>
       <div class="page-heading">写真のアップロード</div>
       <div class="page-desc">アップロードできない場合は写真なしで送信し、公式LINEにてお送りください。</div>
@@ -560,7 +511,7 @@ function buildHairPage(s){
       ${uploadField('fh-length','【髪の毛の長さがわかるお写真】','1枚アップロードください。',1,'📷')}
       <div class="nav"><button class="btn-back" onclick="currentStep--;renderHair()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
-    case 'h-m-hair': return `<div class="fade-in">
+    case 'h-m-hair':return`<div class="fade-in">
       <div class="section-badge hair-m">👨 男性ヘアについて</div>
       <div class="page-heading">ヘアに関するご質問</div>
       <div class="field"><label>髪の長さ<span class="req">必須</span></label>${radioGroup('m-hair-length',['ショート','ミディアム（肩あたり）','ロング（肩以下）'],1)}<div class="error-msg" id="err-m-length">選択してください</div></div>
@@ -569,7 +520,7 @@ function buildHairPage(s){
       <div class="field"><label>髪質<span class="req">必須</span></label>${radioGroup('m-hair-texture',['硬い','柔らかい','普通'],3)}<div class="error-msg" id="err-m-texture">選択してください</div></div>
       <div class="nav"><button class="btn-back" onclick="currentStep--;renderHair()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
-    case 'h-m-photo': return `<div class="fade-in">
+    case 'h-m-photo':return`<div class="fade-in">
       <div class="section-badge hair-m">👨 男性の写真</div>
       <div class="page-heading">写真のアップロード</div>
       ${uploadField('mh-hair','【ヘアセットイメージ写真】','ご希望のヘアセットイメージをアップロードください。',2,'💇')}
@@ -585,41 +536,30 @@ function buildHairPage(s){
           ${hairOptionType==='both'?`<div class="confirm-row"><div class="confirm-key">男性のお名前</div><div class="confirm-val">${commonData.nameMale||''}</div></div>`:''}
           <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${commonData.shootDate}</div></div>
         </div>`;
-      if(isFemale)h+=`<div class="confirm-block"><div class="confirm-block-title">女性ヘア</div>
+      if(isFemale)h+=`<div class="confirm-block"><div class="confirm-block-title">女性ヘア・メイク</div>
         <div class="confirm-row"><div class="confirm-key">髪の長さ</div><div class="confirm-val">${fd.fHairLength||''}</div></div>
         <div class="confirm-row"><div class="confirm-key">パーマ</div><div class="confirm-val">${fd.fPerm||''}</div></div>
         <div class="confirm-row"><div class="confirm-key">毛量/髪質</div><div class="confirm-val">${fd.fHairVolume||''} / ${fd.fHairTexture||''}</div></div>
-      </div>
-      <div class="confirm-block"><div class="confirm-block-title">女性メイク</div>
         <div class="confirm-row"><div class="confirm-key">肌質</div><div class="confirm-val">${fd.fSkinType||''}</div></div>
         <div class="confirm-row"><div class="confirm-key">コンタクト</div><div class="confirm-val">${fd.fContact||''}</div></div>
         <div class="confirm-row"><div class="confirm-key">メイクイメージ</div><div class="confirm-val">${fd.fMakeupImage||''}</div></div>
-        ${fd.fAllergyCosm?`<div class="confirm-row"><div class="confirm-key">肌荒れ化粧品</div><div class="confirm-val">${fd.fAllergyCosm}</div></div>`:''}
-      </div>
-      <div class="confirm-block"><div class="confirm-block-title">女性写真</div>
-        <div class="confirm-row"><div class="confirm-key">ヘアイメージ</div><div class="confirm-val">${PS['fh-hair'].length}枚</div></div>
-        <div class="confirm-row"><div class="confirm-key">メイクイメージ</div><div class="confirm-val">${PS['fh-makeup'].length}枚</div></div>
-        <div class="confirm-row"><div class="confirm-key">髪の長さ写真</div><div class="confirm-val">${PS['fh-length'].length}枚</div></div>
+        <div class="confirm-row"><div class="confirm-key">写真</div><div class="confirm-val">ヘア${PS['fh-hair'].length}枚・メイク${PS['fh-makeup'].length}枚・長さ${PS['fh-length'].length}枚</div></div>
       </div>`;
       if(isMale)h+=`<div class="confirm-block"><div class="confirm-block-title male">男性ヘア</div>
         <div class="confirm-row"><div class="confirm-key">髪の長さ</div><div class="confirm-val">${fd.mHairLength||''}</div></div>
         <div class="confirm-row"><div class="confirm-key">パーマ</div><div class="confirm-val">${fd.mPerm||''}</div></div>
         <div class="confirm-row"><div class="confirm-key">毛量/髪質</div><div class="confirm-val">${fd.mHairVolume||''} / ${fd.mHairTexture||''}</div></div>
-      </div>
-      <div class="confirm-block"><div class="confirm-block-title male">男性写真</div>
-        <div class="confirm-row"><div class="confirm-key">ヘアイメージ</div><div class="confirm-val">${PS['mh-hair'].length}枚</div></div>
-        <div class="confirm-row"><div class="confirm-key">髪の長さ写真</div><div class="confirm-val">${PS['mh-length'].length}枚</div></div>
+        <div class="confirm-row"><div class="confirm-key">写真</div><div class="confirm-val">ヘア${PS['mh-hair'].length}枚・長さ${PS['mh-length'].length}枚</div></div>
       </div>`;
       if(fd.memo)h+=`<div class="confirm-block"><div class="confirm-block-title">補足メモ</div><div class="confirm-row"><div class="confirm-key">メモ</div><div class="confirm-val">${fd.memo}</div></div></div>`;
       h+=`<div class="nav"><button class="btn-back" onclick="currentStep--;renderHair()">← 戻る</button><button class="btn-submit" id="btn-submit" onclick="submitSection('hair')">送信する</button></div></div>`;
       return h;
     }
-    default:return '';
+    default:return'';
   }
 }
 function goHair(){
-  const s=hairSteps[currentStep];
-  let ok=true;
+  const s=hairSteps[currentStep];let ok=true;
   const show=id=>{const e=document.getElementById(id);if(e){e.classList.add('show');ok=false;}};
   const hide=id=>{const e=document.getElementById(id);if(e)e.classList.remove('show');};
   if(s==='h-f-hair'){
@@ -651,94 +591,109 @@ function goHair(){
     if(!hairFormData.mHairVolume)show('err-m-volume');else hide('err-m-volume');
     if(!hairFormData.mHairTexture)show('err-m-texture');else hide('err-m-texture');
   }
-  if(s==='h-m-photo') hairFormData.memo=document.getElementById('h-memo')?.value||hairFormData.memo||'';
+  if(s==='h-m-photo')hairFormData.memo=document.getElementById('h-memo')?.value||hairFormData.memo||'';
   if(!ok)return;
   currentStep++;renderHair();
 }
 
-// ── PROP ──
-function renderProp(){
-  updateProgressFlow('prop');
-  const MAX_PROPS=5;
-  document.getElementById('form-main').innerHTML=`<div class="fade-in">
-    <div class="section-badge prop">👒 小物レンタル</div>
-    <div class="page-heading">衣装・小物の選択</div>
-    <div class="page-desc">衣装は1コーデ、小物は最大5個まで選べます。</div>
+// ── OUTFIT ──
+async function renderOutfit(){
+  updateProgressFlow('outfit');
+  const m=document.getElementById('form-main');
+  // ローディング表示
+  m.innerHTML=`<div class="fade-in">
+    <div class="section-badge outfit">👗 衣装レンタル</div>
+    <div class="page-heading">衣装の選択</div>
+    <div style="padding:40px 0;text-align:center;color:var(--muted);font-size:13px">衣装データを読み込み中…</div>
+  </div>`;
+  await loadOutfits();
+  renderOutfitContent();
+}
+
+function renderOutfitContent(){
+  selectedCategory=selectedCategory||CATEGORIES[0];
+  const filtered=OUTFITS.filter(o=>o.category===selectedCategory);
+  const selectedNames=outfitData.selected.map(id=>OUTFITS.find(o=>o.id===id)?.name).filter(Boolean);
+
+  const m=document.getElementById('form-main');
+  m.innerHTML=`<div class="fade-in">
+    <div class="section-badge outfit">👗 衣装レンタル</div>
+    <div class="page-heading">衣装の選択</div>
+    <div class="page-desc">複数コーデ選択可能です。<br>2コーデ目以降は1コーデにつき <strong>¥3,300</strong> の追加料金となります。</div>
+
     <div class="field">
-      <label>衣装を選ぶ<span class="opt">1コーデ</span></label>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.7">2コーデ以上ご希望の場合は1コーデにつき ¥3,300 の追加料金となります。追加ご希望の場合は補足メモにご記入ください。</div>
-      <div class="outfit-grid" id="outfit-grid">
-        ${OUTFITS.map(o=>`<div class="outfit-card${propData.outfits.includes(o.id)?' selected':''}" id="outfit-${o.id}" onclick="toggleOutfit('${o.id}')">
-          <div class="outfit-img-wrap"><img src="${o.img}" alt="${o.label}" loading="lazy"></div>
-          <div class="outfit-label-text">${o.label}</div>
-          <div class="outfit-check">✓</div>
-        </div>`).join('')}
+      <label>サイズカテゴリ</label>
+      <div class="cat-tabs">
+        ${CATEGORIES.map(c=>`<button class="cat-tab${selectedCategory===c?' active':''}" onclick="switchCategory('${c}')">${c}</button>`).join('')}
       </div>
+      ${filtered.length===0
+        ?'<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">このカテゴリには衣装がまだ登録されていません</div>'
+        :`<div class="outfit-grid">${filtered.map(o=>`
+          <div class="outfit-card${outfitData.selected.includes(o.id)?' selected':''}" id="oc-${o.id}" onclick="toggleOutfit('${o.id}')">
+            <div class="outfit-img-wrap"><img src="${o.img||''}" alt="${o.name}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'padding:20px;text-align:center;color:var(--muted);font-size:11px\\'>画像なし</div>'"></div>
+            <div class="outfit-label-text">${o.name}</div>
+            <div class="outfit-check">✓</div>
+            <div class="outfit-count-badge" id="ob-${o.id}">${outfitData.selected.indexOf(o.id)+1}</div>
+          </div>`).join('')}</div>`
+      }
     </div>
-    <div class="field" style="margin-top:28px">
-      <label>小物を選ぶ<span class="opt">最大5個</span></label>
-      <div class="count-info">選択中：<span id="prop-count">${propData.props.length}</span> / ${MAX_PROPS} 個</div>
-      <div class="prop-grid" id="prop-grid">
-        ${PROPS.map(p=>`<div class="prop-card${propData.props.includes(p.id)?' selected':''}" id="prop-${p.id}" onclick="toggleProp('${p.id}',${MAX_PROPS})">
-          <div class="prop-img-wrap"><img src="${p.img}" alt="${p.label}" loading="lazy"></div>
-          <div class="prop-label-text">${p.label}</div>
-          <div class="prop-check">✓</div>
-        </div>`).join('')}
+
+    ${outfitData.selected.length>0?`<div class="field">
+      <label>選択中の衣装（${outfitData.selected.length}コーデ）</label>
+      <div class="selected-outfits">
+        ${outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?`<div class="selected-outfit-chip">第${i+1}コーデ：${o.name}</div>`:''}).join('')}
       </div>
-    </div>
+      ${outfitData.selected.length>=2?`<div style="font-size:12px;color:var(--accent);margin-top:8px">※ 2コーデ目以降 ¥3,300/コーデの追加料金となります</div>`:''}
+    </div>`:''}
+
     <div class="field">
-      <label>小物・衣装についての補足メモ<span class="opt">任意</span></label>
-      <textarea id="prop-memo" placeholder="追加コーデのご希望、サイズ感のご要望などご自由にお書きください。">${propData.memo||''}</textarea>
+      <label>補足メモ<span class="opt">任意</span></label>
+      <textarea id="outfit-memo" placeholder="サイズ感のご要望や気になる衣装があればご自由にお書きください。">${outfitData.memo||''}</textarea>
     </div>
     <div class="nav">
-      <button class="btn-back" onclick="backToSelector()">← 戻る</button>
-      <button class="btn-next" onclick="confirmProp()">確認へ　→</button>
+      <button class="btn-back" onclick="renderSelector()">← 戻る</button>
+      <button class="btn-next" onclick="confirmOutfit()">確認へ　→</button>
     </div>
-  </div>`;
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-function toggleOutfit(id){
-  const card=document.getElementById('outfit-'+id);
-  if(propData.outfits.includes(id)){
-    propData.outfits=propData.outfits.filter(x=>x!==id);
-    card.classList.remove('selected');
-  } else {
-    // 既存の選択を解除して1つだけ
-    propData.outfits.forEach(old=>{document.getElementById('outfit-'+old)?.classList.remove('selected');});
-    propData.outfits=[id];
-    card.classList.add('selected');
-  }
-}
-function toggleProp(id,max){
-  const card=document.getElementById('prop-'+id);
-  if(propData.props.includes(id)){
-    propData.props=propData.props.filter(x=>x!==id);
-    card.classList.remove('selected');
-  } else {
-    if(propData.props.length>=max){alert('小物は最大'+max+'個まで選択できます');return;}
-    propData.props.push(id);
-    card.classList.add('selected');
-  }
-  document.getElementById('prop-count').textContent=propData.props.length;
-}
-function confirmProp(){
-  propData.memo=document.getElementById('prop-memo')?.value||'';
-  const outfitNames=propData.outfits.map(id=>OUTFITS.find(o=>o.id===id)?.label).filter(Boolean);
-  const propNames=propData.props.map(id=>PROPS.find(p=>p.id===id)?.label).filter(Boolean);
-  document.getElementById('form-main').innerHTML=`<div class="fade-in">
-    <div class="section-badge prop">👒 小物レンタル</div>
-    <div class="page-heading">内容の確認</div>
-    <div class="confirm-block"><div class="confirm-block-title prop">衣装・小物</div>
-      <div class="confirm-row"><div class="confirm-key">衣装</div><div class="confirm-val">${outfitNames.join('、')||'なし'}</div></div>
-      <div class="confirm-row"><div class="confirm-key">小物（${propNames.length}個）</div><div class="confirm-val">${propNames.join('、')||'なし'}</div></div>
-      ${propData.memo?`<div class="confirm-row"><div class="confirm-key">補足メモ</div><div class="confirm-val">${propData.memo}</div></div>`:''}
-    </div>
-    <div class="nav"><button class="btn-back" onclick="renderProp()">← 戻る</button><button class="btn-submit" id="btn-submit" onclick="submitSection('prop')">送信する</button></div>
   </div>`;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function backToSelector(){currentSection='';currentStep=0;renderSelector();}
+function switchCategory(cat){
+  outfitData.memo=document.getElementById('outfit-memo')?.value||outfitData.memo||'';
+  selectedCategory=cat;
+  renderOutfitContent();
+}
+
+function toggleOutfit(id){
+  const card=document.getElementById('oc-'+id);
+  const idx=outfitData.selected.indexOf(id);
+  if(idx>=0){
+    outfitData.selected.splice(idx,1);
+  }else{
+    outfitData.selected.push(id);
+  }
+  // re-render to update badges
+  outfitData.memo=document.getElementById('outfit-memo')?.value||outfitData.memo||'';
+  renderOutfitContent();
+}
+
+function confirmOutfit(){
+  outfitData.memo=document.getElementById('outfit-memo')?.value||'';
+  const selectedNames=outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?`第${i+1}コーデ：${o.name}`:''}).filter(Boolean);
+  document.getElementById('form-main').innerHTML=`<div class="fade-in">
+    <div class="section-badge outfit">👗 衣装レンタル</div>
+    <div class="page-heading">内容の確認</div>
+    <div class="confirm-block"><div class="confirm-block-title outfit">選択した衣装</div>
+      <div class="confirm-row"><div class="confirm-key">お名前</div><div class="confirm-val">${commonData.name}</div></div>
+      <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${commonData.shootDate}</div></div>
+      <div class="confirm-row"><div class="confirm-key">衣装（${outfitData.selected.length}コーデ）</div><div class="confirm-val">${selectedNames.join('　/　')||'なし'}</div></div>
+      ${outfitData.memo?`<div class="confirm-row"><div class="confirm-key">補足メモ</div><div class="confirm-val">${outfitData.memo}</div></div>`:''}
+    </div>
+    ${outfitData.selected.length>=2?`<div style="font-size:12px;color:var(--accent);padding:0 4px 16px">※ 2コーデ目以降 ¥3,300/コーデの追加料金となります</div>`:''}
+    <div class="nav"><button class="btn-back" onclick="renderOutfitContent()">← 戻る</button><button class="btn-submit" id="btn-submit" onclick="submitSection('outfit')">送信する</button></div>
+  </div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 // ── SUBMIT ──
 async function submitSection(section){
@@ -757,61 +712,54 @@ async function submitSection(section){
       const[fhi,fmi,fli,mhi,mli]=await Promise.all([toB64('fh-hair'),toB64('fh-makeup'),toB64('fh-length'),toB64('mh-hair'),toB64('mh-length')]);
       Object.assign(payload,{...hairFormData,hairOptionType,fHairImages:fhi,fMakeupImages:fmi,fLengthImages:fli,mHairImages:mhi,mLengthImages:mli});
     }
-    if(section==='prop'){
-      const outfitNames=propData.outfits.map(id=>OUTFITS.find(o=>o.id===id)?.label).filter(Boolean);
-      const propNames=propData.props.map(id=>PROPS.find(p=>p.id===id)?.label).filter(Boolean);
-      Object.assign(payload,{outfits:outfitNames,props:propNames,memo:propData.memo});
+    if(section==='outfit'){
+      const selectedNames=outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?`第${i+1}コーデ：${o.name}`:''}).filter(Boolean);
+      Object.assign(payload,{outfits:selectedNames,memo:outfitData.memo});
     }
     const result=await apiPost(payload);
     document.getElementById('sending-overlay').classList.remove('show');
-    if(result.ok){
-      sectionStatus[section]=true;
-      showSectionDone(section);
-    } else {
-      alert('送信に失敗しました。\n'+(result.error||''));
-      if(btn)btn.disabled=false;
-    }
+    if(result.ok){sectionStatus[section]=true;showSectionDone(section);}
+    else{alert('送信に失敗しました。\n'+(result.error||''));if(btn)btn.disabled=false;}
   }catch(e){
     document.getElementById('sending-overlay').classList.remove('show');
     alert('通信エラーが発生しました。インターネット接続をご確認ください。');
     if(btn)btn.disabled=false;
   }
 }
+
 function showSectionDone(section){
-  const labels={flower:'花束',hair:'ヘアメイク',prop:'小物レンタル'};
+  const labels={flower:'花束',hair:'ヘアメイク',outfit:'衣装レンタル'};
   const nextIdx=sectionsToFill.indexOf(section)+1;
-  const hasNext=nextIdx<sectionsToFill.length;
   const m=document.getElementById('form-main');
-  if(!hasNext){
+  if(nextIdx>=sectionsToFill.length){
     m.innerHTML=`<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべての回答が完了しました</h2><p>ご回答ありがとうございます。<br>内容はスタジオが確認し、担当者に共有いたします。<br><br>当日お会いできるのを楽しみにしております。</p></div>`;
     return;
   }
-  const nextSection=sectionsToFill[nextIdx];
-  m.innerHTML=`<div class="section-done-card"><div class="section-done-icon">✓</div><div><div class="section-done-title">「${labels[section]}」の回答を送信しました</div><div class="section-done-sub">続けて「${labels[nextSection]}」の回答をお願いします。</div></div></div>
-  <div class="nav"><button class="btn-next" onclick="moveNext('${nextSection}')">「${labels[nextSection]}」の回答へ　→</button></div>`;
+  const next=sectionsToFill[nextIdx];
+  m.innerHTML=`<div class="section-done-card"><div class="section-done-icon">✓</div><div><div class="section-done-title">「${labels[section]}」の回答を送信しました</div><div class="section-done-sub">続けて「${labels[next]}」の回答をお願いします。</div></div></div>
+  <div class="nav"><button class="btn-next" onclick="moveNext('${next}')">「${labels[next]}」の回答へ　→</button></div>`;
 }
-function moveNext(section){currentSection=section;currentStep=0;if(section==='hair'){hairSteps=buildHairSteps();}renderCurrentSection();}
+function moveNext(s){currentSection=s;currentStep=0;if(s==='hair')hairSteps=buildHairSteps();renderCurrentSection();}
 
 // ── progress ──
 function updateProgressEmpty(){document.getElementById('progress-steps').innerHTML='';}
 function updateProgressFlow(section){
-  const labels={common:'📋 基本情報',flower:'🌷 花束',hair:'💄 ヘアメイク',prop:'👒 小物'};
-  const allSecs=['common',...sectionsToFill];
-  document.getElementById('progress-steps').innerHTML=allSecs.map((s,i)=>{
+  const labels={common:'📋 基本情報',flower:'🌷 花束',hair:'💄 ヘアメイク',outfit:'👗 衣装'};
+  const all=['common',...sectionsToFill];
+  document.getElementById('progress-steps').innerHTML=all.map((s,i)=>{
     const done=s==='common'?currentSection!=='common':sectionStatus[s];
     const active=s===section;
-    const cls=done?'done':active?'active':'';
-    return `<div class="step-item ${cls}"><div class="step-dot">${i+1}</div><div class="step-label">${labels[s]||s}</div></div>`;
+    return`<div class="step-item ${done?'done':active?'active':''}"><div class="step-dot">${i+1}</div><div class="step-label">${labels[s]||s}</div></div>`;
   }).join('');
 }
 
 // ── helpers ──
 function radioGroup(name,opts,cols){
   const gc=cols===1?'col1':cols===3?'col3':'';
-  return `<div class="radio-grid ${gc}">`+opts.map(o=>`<label class="choice-card"><input type="radio" name="${name}" value="${o}"><div class="choice-label"><div class="choice-dot"></div>${o}</div></label>`).join('')+'</div>';
+  return`<div class="radio-grid ${gc}">`+opts.map(o=>`<label class="choice-card"><input type="radio" name="${name}" value="${o}"><div class="choice-label"><div class="choice-dot"></div>${o}</div></label>`).join('')+'</div>';
 }
 function uploadField(key,label,desc,max,icon){
-  return `<div class="field"><label>${label}<span class="opt">最大${max}枚</span></label>
+  return`<div class="field"><label>${label}<span class="opt">最大${max}枚</span></label>
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.7">${desc}</div>
     <div class="upload-area"><input type="file" accept="image/*"${max>1?' multiple':''} onchange="handlePhotos(event,'${key}',${max})">
     <div class="upload-icon">${icon}</div><div class="upload-text"><strong>タップして写真を選ぶ</strong><br>最大${max}枚</div></div>
@@ -830,9 +778,7 @@ function renderPreviews(key){
 }
 function removePhoto(key,i){PS[key].splice(i,1);renderPreviews(key);}
 
-// ══════════════════════════════════════════════
-// ADMIN
-// ══════════════════════════════════════════════
+// ══ ADMIN ══
 let allCustomers=[];
 async function initAdmin(){
   try{
@@ -845,17 +791,12 @@ async function initAdmin(){
     document.getElementById('admin-sub').textContent='エラー';
   }
 }
-
-function isComplete(c){
-  const ss=c.sectionSentStatus||{};
-  return ss.flower&&ss.hair&&ss.prop;
-}
+function isComplete(c){const ss=c.sectionSentStatus||{};return ss.flower&&ss.hair&&ss.outfit;}
 
 function showAdminDash(){
   const newItems=allCustomers.filter(c=>!isComplete(c));
   const doneItems=allCustomers.filter(c=>isComplete(c));
   document.getElementById('admin-sub').textContent='全'+allCustomers.length+'件';
-  const base=location.origin+location.pathname;
   document.getElementById('admin-wrap').innerHTML=`
     <div class="create-customer-wrap">
       <div class="create-customer-title">📋 お客様URLの発行</div>
@@ -903,11 +844,8 @@ function buildAdminCard(c){
   const base=location.origin+location.pathname;
   const ss=c.sectionSentStatus||{};
   const badge=!isComplete(c)?'<span class="badge-new">NEW</span>':'';
-  const secSt=(sec,label)=>{
-    const done=ss[sec];
-    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px">${label}</span><span class="sec-status ${done?'ok':'ng'}">${done?'回答済み':'未回答'}</span></div>`;
-  };
-  return `<div class="admin-card">
+  const secSt=(sec,label)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px">${label}</span><span class="sec-status ${ss[sec]?'ok':'ng'}">${ss[sec]?'回答済み':'未回答'}</span></div>`;
+  return`<div class="admin-card">
     <div class="admin-card-head">
       <div><span class="admin-card-name">${c.name} 様</span>${badge}</div>
       <div class="admin-card-meta">発行：${fmtDT(c.createdAt)}</div>
@@ -916,14 +854,14 @@ function buildAdminCard(c){
       <div style="margin-bottom:14px">
         ${secSt('flower','🌷 花束')}
         ${secSt('hair','💄 ヘアメイク')}
-        ${secSt('prop','👒 小物レンタル')}
+        ${secSt('outfit','👗 衣装レンタル')}
       </div>
       <div class="section-urls">
-        <div class="section-urls-title">担当者への共有URL（セクション別）</div>
-        ${['flower','hair','prop'].map(sec=>{
-          const labels={flower:'🌷 花束担当者',hair:'💄 ヘアメイク担当者',prop:'👒 小物担当者'};
+        <div class="section-urls-title">担当者への共有URL</div>
+        ${['flower','hair','outfit'].map(sec=>{
+          const lb={flower:'🌷 花束担当者',hair:'💄 ヘアメイク担当者',outfit:'👗 衣装担当者'};
           const url=`${base}?sid=${c.id}&section=${sec}`;
-          return `<div class="section-url-row"><div class="section-url-label">${labels[sec]}</div>
+          return`<div class="section-url-row"><div class="section-url-label">${lb[sec]}</div>
             <div class="share-row"><span class="share-url-text">${url}</span><button class="btn-copy" onclick="copyText('${url}',this)">コピー</button></div></div>`;
         }).join('')}
       </div>
@@ -945,8 +883,7 @@ async function loadDetail(id){
   try{
     const r=await apiGet({action:'getCustomerDetail',cid:id});
     if(!r.ok)throw new Error(r.error);
-    const d=r.data;
-    const w=document.getElementById('det-'+id);
+    const d=r.data,w=document.getElementById('det-'+id);
     let h='';
     if(d.flower){
       h+=`<div class="admin-sec-title flower">🌷 花束の回答</div>
@@ -992,12 +929,11 @@ async function loadDetail(id){
       }
       if(d.hair.memo)h+=`<div style="font-size:12px;margin-top:8px;color:var(--muted)">メモ：<span style="color:var(--dark)">${d.hair.memo}</span></div>`;
     }
-    if(d.prop){
-      h+=`<div class="admin-sec-title prop">👒 小物レンタル</div>
+    if(d.outfit){
+      h+=`<div class="admin-sec-title outfit">👗 衣装レンタル</div>
         <div class="admin-grid">
-          <div><div class="admin-fl">衣装</div>${(d.prop.outfits||[]).join('、')||'なし'}</div>
-          <div><div class="admin-fl">小物</div>${(d.prop.props||[]).join('、')||'なし'}</div>
-          ${d.prop.memo?`<div><div class="admin-fl">補足</div>${d.prop.memo}</div>`:''}
+          <div><div class="admin-fl">選択衣装</div>${(d.outfit.outfits||[]).join('　/　')||'なし'}</div>
+          ${d.outfit.memo?`<div><div class="admin-fl">補足</div>${d.outfit.memo}</div>`:''}
         </div>`;
     }
     w.innerHTML=h||'<p style="font-size:12px;color:var(--muted)">回答なし</p>';
@@ -1007,23 +943,21 @@ async function loadDetail(id){
 
 function photoRow(label,imgs){
   if(!imgs||imgs.length===0)return'';
-  return `<div style="font-size:11px;color:var(--muted);margin:8px 0 4px">${label}（${imgs.length}枚）</div>
+  return`<div style="font-size:11px;color:var(--muted);margin:8px 0 4px">${label}（${imgs.length}枚）</div>
     <div class="photo-row">${imgs.map(u=>`<div class="photo-thumb-sm" onclick="openLightbox('${u}')"><img src="${u}" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none'"></div>`).join('')}</div>`;
 }
 
-// ══════════════════════════════════════════════
-// SALON VIEW
-// ══════════════════════════════════════════════
+// ══ SALON ══
 async function initSalon(id,section){
-  const secLabels={flower:'花束担当者',hair:'ヘアメイク担当者',prop:'小物レンタル担当者'};
-  document.getElementById('salon-header-title').textContent=(secLabels[section]||'担当者')+' 様';
+  const lb={flower:'花束担当者',hair:'ヘアメイク担当者',outfit:'衣装担当者'};
+  document.getElementById('salon-header-title').textContent=(lb[section]||'担当者')+' 様';
   try{
     const r=await apiGet({action:'getCustomerDetail',cid:id});
     if(!r.ok)throw new Error(r.error);
     const d=r.data,c=r.customer;
     const pSec=(title,imgs,cls)=>{
       if(!imgs||imgs.length===0)return'';
-      return `<div class="salon-section"><div class="salon-sec-title ${cls}">${title}（${imgs.length}枚）</div>
+      return`<div class="salon-section"><div class="salon-sec-title ${cls}">${title}（${imgs.length}枚）</div>
         <div class="salon-photos">${imgs.map(u=>`<div class="salon-photo" onclick="openLightbox('${u}')"><img src="${u}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'"></div>`).join('')}</div></div>`;
     };
     let body=`<div class="salon-section"><div class="salon-sec-title common">基本情報</div><div class="salon-grid">
@@ -1033,7 +967,7 @@ async function initSalon(id,section){
       body+=`<div class="salon-section"><div class="salon-sec-title flower">🌷 花束ご要望</div><div class="salon-grid">
         <div><div class="salon-fl">お名前</div><div class="salon-fv">${d.flower.name||''}</div></div>
         <div><div class="salon-fl">撮影日</div><div class="salon-fv">${fmtD(d.flower.shootDate)}</div></div>
-        <div><div class="salon-fl">ご希望の雰囲気</div><div class="salon-fv">${d.flower.mood||''}</div></div>
+        <div><div class="salon-fl">雰囲気</div><div class="salon-fv">${d.flower.mood||''}</div></div>
         ${d.flower.note?`<div><div class="salon-fl">補足</div><div class="salon-fv">${d.flower.note}</div></div>`:''}
       </div></div>`;
       body+=pSec('撮影者の普段の様子',d.flower.personImages,'flower');
@@ -1043,15 +977,13 @@ async function initSalon(id,section){
       const isFemale=d.hair.hairOptionType==='female'||d.hair.hairOptionType==='both';
       const isMale=d.hair.hairOptionType==='male'||d.hair.hairOptionType==='both';
       if(isFemale){
-        body+=`<div class="salon-section"><div class="salon-sec-title female">👩 女性ヘア</div><div class="salon-grid">
+        body+=`<div class="salon-section"><div class="salon-sec-title female">👩 女性ヘア・メイク</div><div class="salon-grid">
           <div><div class="salon-fl">お名前</div><div class="salon-fv">${d.hair.name||''}</div></div>
           <div><div class="salon-fl">撮影日</div><div class="salon-fv">${fmtD(d.hair.shootDate)}</div></div>
           <div><div class="salon-fl">髪の長さ</div><div class="salon-fv">${d.hair.fHairLength||''}</div></div>
           <div><div class="salon-fl">パーマ</div><div class="salon-fv">${d.hair.fPerm||''}</div></div>
           <div><div class="salon-fl">毛量</div><div class="salon-fv">${d.hair.fHairVolume||''}</div></div>
           <div><div class="salon-fl">髪質</div><div class="salon-fv">${d.hair.fHairTexture||''}</div></div>
-        </div></div>
-        <div class="salon-section"><div class="salon-sec-title female">👩 女性メイク</div><div class="salon-grid">
           <div><div class="salon-fl">肌質</div><div class="salon-fv">${d.hair.fSkinType||''}</div></div>
           <div><div class="salon-fl">コンタクト</div><div class="salon-fv">${d.hair.fContact||''}</div></div>
           <div><div class="salon-fl">メイクイメージ</div><div class="salon-fv">${d.hair.fMakeupImage||''}</div></div>
@@ -1074,11 +1006,12 @@ async function initSalon(id,section){
       }
       if(d.hair.memo)body+=`<div class="salon-section"><div class="salon-sec-title common">補足メモ</div><div style="font-size:13px;line-height:1.8">${d.hair.memo}</div></div>`;
     }
-    if((!section||section==='prop')&&d.prop){
-      body+=`<div class="salon-section"><div class="salon-sec-title prop">👒 小物レンタル</div><div class="salon-grid">
-        <div><div class="salon-fl">衣装</div><div class="salon-fv">${(d.prop.outfits||[]).join('、')||'なし'}</div></div>
-        <div><div class="salon-fl">小物（${(d.prop.props||[]).length}個）</div><div class="salon-fv">${(d.prop.props||[]).join('、')||'なし'}</div></div>
-        ${d.prop.memo?`<div><div class="salon-fl">補足</div><div class="salon-fv">${d.prop.memo}</div></div>`:''}
+    if((!section||section==='outfit')&&d.outfit){
+      body+=`<div class="salon-section"><div class="salon-sec-title outfit">👗 衣装レンタル</div><div class="salon-grid">
+        <div><div class="salon-fl">お名前</div><div class="salon-fv">${d.outfit.name||''}</div></div>
+        <div><div class="salon-fl">撮影日</div><div class="salon-fv">${fmtD(d.outfit.shootDate)}</div></div>
+        <div style="grid-column:1/-1"><div class="salon-fl">選択衣装</div><div class="salon-fv">${(d.outfit.outfits||[]).join('　/　')||'なし'}</div></div>
+        ${d.outfit.memo?`<div style="grid-column:1/-1"><div class="salon-fl">補足メモ</div><div class="salon-fv">${d.outfit.memo}</div></div>`:''}
       </div></div>`;
     }
     document.getElementById('salon-wrap').innerHTML=`<div class="salon-card">
@@ -1090,9 +1023,9 @@ async function initSalon(id,section){
   }
 }
 
-// ── utils ──
-function fmtD(s){if(!s)return'';try{const d=new Date(s);if(!isNaN(d))return d.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Tokyo'});}catch(e){}return s.slice(0,10);}
-function fmtDT(s){if(!s)return'';if(!s.includes('GMT'))return s;try{const d=new Date(s);if(!isNaN(d))return d.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'});}catch(e){}return s;}
+// utils
+function fmtD(s){if(!s)return'';try{const d=new Date(s);if(!isNaN(d))return d.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Tokyo'});}catch(e){}return String(s).slice(0,10);}
+function fmtDT(s){if(!s)return'';if(!String(s).includes('GMT'))return s;try{const d=new Date(s);if(!isNaN(d))return d.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'});}catch(e){}return s;}
 function copyText(t,btn){navigator.clipboard.writeText(t).then(()=>{btn.textContent='コピー完了!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='コピー';btn.classList.remove('copied');},2000);});}
 function openLightbox(s){document.getElementById('lightbox-img').src=s;document.getElementById('lightbox').classList.add('open');}
 function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
