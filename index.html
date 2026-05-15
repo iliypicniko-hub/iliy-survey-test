@@ -298,7 +298,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbzuGldXUDcrELONyi4WQCPFk7nImKxGGYxtUXPZ0VPfp-XchYCpUD_MZozK7T9t-isj/exec';
+const API='https://script.google.com/macros/s/AKfycbxMSIA9NU2H0RKH0F1VCHdIh2bv_1K4Lws0pXg1cX4HCMbULAOMCX1EEarhZo6A5lus/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -350,7 +350,7 @@ async function initClient(id){
     if(!r.ok)throw new Error(r.error);
     customer=r.data;sectionStatus=customer.sectionSentStatus||{};
     document.getElementById('client-header-sub').textContent=customer.name+' 様の事前アンケート';
-    renderSelector();
+    renderCommon();
   }catch(e){
     document.getElementById('form-main').innerHTML='<div style="text-align:center;padding:60px 0;color:var(--muted);font-size:14px">URLが無効か読み込みに失敗しました。</div>';
   }
@@ -359,11 +359,7 @@ async function initClient(id){
 function renderSelector(){
   updateProgressEmpty();
   const m=document.getElementById('form-main');
-  const allDone=sectionStatus.flower&&sectionStatus.hair&&sectionStatus.outfit;
-  if(allDone){m.innerHTML='<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべての回答が完了しています</h2><p>当日お会いできるのを楽しみにしております。</p></div>';return;}
-  const resume=(sectionStatus.flower||sectionStatus.hair||sectionStatus.outfit)?'<div class="resume-banner">✅ 一部の回答はすでに送信済みです。続きから回答できます。</div>':'';
   m.innerHTML=`<div class="fade-in">
-    ${resume}
     <div class="page-heading">オプションの確認</div>
     <div class="page-desc">ご予約のオプションをすべて選択してください。</div>
     <div class="field">
@@ -381,7 +377,7 @@ function renderSelector(){
       ${rg('has-outfit',['衣装レンタルを利用する','衣装レンタルは利用しない'],'col1',sectionStatus.outfit)}
       <div class="error-msg" id="err-outfit">選択してください</div>
     </div>
-    <div class="nav"><button class="btn-next" onclick="startSections()">次へ　→</button></div>
+    <div class="nav"><button class="btn-back" onclick="renderCommon()">← 戻る</button><button class="btn-next" onclick="startSections()">次へ　→</button></div>
   </div>`;
 }
 
@@ -413,29 +409,33 @@ function startSections(){
     document.getElementById('form-main').innerHTML='<div class="thankyou"><div class="thankyou-icon">✓</div><h2>回答は不要です</h2><p>当日お会いできるのを楽しみにしております。</p></div>';
     return;
   }
-  currentSection='common';currentStep=0;renderCommon();
+  currentSection=sectionsToFill[0];currentStep=0;renderCurrentSection();
 }
 
-// ── 共通情報 ──
+// ── 共通情報（最初に表示）──
 function renderCommon(){
-  updateProgressFlow('common');
-  const isBoth=hairOptionType==='both'&&sectionsToFill.includes('hair');
+  updateProgressEmpty();
+  const allDone=sectionStatus.flower&&sectionStatus.hair&&sectionStatus.outfit;
+  if(allDone){
+    document.getElementById('form-main').innerHTML='<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべての回答が完了しています</h2><p>当日お会いできるのを楽しみにしております。</p></div>';
+    return;
+  }
+  const resume=(sectionStatus.flower||sectionStatus.hair||sectionStatus.outfit)?'<div class="resume-banner">✅ 一部の回答はすでに送信済みです。続きから回答できます。</div>':'';
   document.getElementById('form-main').innerHTML=`<div class="fade-in">
-    <div class="page-heading">基本情報</div>
+    ${resume}
+    <div class="page-heading">基本情報の入力</div>
     <div class="page-desc">花束・ヘアメイク・衣装、すべての担当者に共有されます。</div>
     <div class="field">
-      <label>${isBoth?'女性のお名前':'お名前'}<span class="req">必須</span></label>
+      <label>お名前<span class="req">必須</span></label>
       <input type="text" id="c-name" placeholder="山田 花子" value="${commonData.name||''}">
       <div class="error-msg" id="err-c-name">お名前を入力してください</div>
     </div>
-    ${isBoth?`<div class="field"><label>男性のお名前<span class="req">必須</span></label><input type="text" id="c-name-male" placeholder="山田 太郎" value="${commonData.nameMale||''}"><div class="error-msg" id="err-c-name-male">お名前を入力してください</div></div>`:''}
     <div class="field">
       <label>撮影日<span class="req">必須</span></label>
       <input type="date" id="c-date" value="${commonData.shootDate||''}">
       <div class="error-msg" id="err-c-date">撮影日を選択してください</div>
     </div>
     <div class="nav">
-      <button class="btn-back" onclick="renderSelector()">← 戻る</button>
       <button class="btn-next" onclick="goCommon()">次へ　→</button>
     </div>
   </div>`;
@@ -443,14 +443,12 @@ function renderCommon(){
 }
 function goCommon(){
   commonData.name=document.getElementById('c-name')?.value||'';
-  commonData.nameMale=document.getElementById('c-name-male')?.value||'';
   commonData.shootDate=document.getElementById('c-date')?.value||'';
   let ok=true;
   if(!commonData.name){document.getElementById('err-c-name')?.classList.add('show');ok=false;}else document.getElementById('err-c-name')?.classList.remove('show');
-  if(hairOptionType==='both'&&sectionsToFill.includes('hair')&&!commonData.nameMale){document.getElementById('err-c-name-male')?.classList.add('show');ok=false;}else document.getElementById('err-c-name-male')?.classList.remove('show');
   if(!commonData.shootDate){document.getElementById('err-c-date')?.classList.add('show');ok=false;}else document.getElementById('err-c-date')?.classList.remove('show');
   if(!ok)return;
-  currentSection=sectionsToFill[0];currentStep=0;renderCurrentSection();
+  renderSelector();
 }
 function renderCurrentSection(){
   if(currentSection==='flower')renderFlower();
@@ -532,10 +530,9 @@ function buildHairPage(s){
   switch(s){
     case 'h-basic':return`<div class="fade-in">
       <div class="section-badge hair-f">💄 ヘアメイクオプション</div>
-      <div class="page-heading">基本確認</div>
+      <div class="page-heading">ヘアメイクについて</div>
       <div class="notice-box"><strong>🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。</strong><br><br><strong>🔶 メイクアイテムのお持ち込みは自由です。</strong>敏感肌の方は普段使用のアイテムをお持ち込みください。<br><br>＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。</div>
-      <div class="field"><label>お名前</label><div style="padding:11px 13px;background:var(--accent-light);border-radius:8px;font-size:14px">${commonData.name}${commonData.nameMale?' / '+commonData.nameMale:''}</div></div>
-      <div class="field"><label>撮影日</label><div style="padding:11px 13px;background:var(--accent-light);border-radius:8px;font-size:14px">${commonData.shootDate}</div></div>
+      ${hairOptionType==='both'?`<div class="field"><label>男性のお名前<span class="req">必須</span></label><input type="text" id="h-name-male" placeholder="山田 太郎" value="${commonData.nameMale||''}"><div class="error-msg" id="err-h-name-male">お名前を入力してください</div></div>`:''}
       <div class="nav"><button class="btn-back" onclick="renderSelector()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
     case 'h-f-hair':return`<div class="fade-in">
@@ -616,6 +613,10 @@ function goHair(){
   const s=hairSteps[currentStep];let ok=true;
   const show=id=>{const e=document.getElementById(id);if(e){e.classList.add('show');ok=false;}};
   const hide=id=>{const e=document.getElementById(id);if(e)e.classList.remove('show');};
+  if(s==='h-basic'&&hairOptionType==='both'){
+    commonData.nameMale=document.getElementById('h-name-male')?.value||commonData.nameMale||'';
+    if(!commonData.nameMale){show('err-h-name-male');}else{hide('err-h-name-male');}
+  }
   if(s==='h-f-hair'){
     hairFormData.fHairLength=document.querySelector('input[name="f-hair-length"]:checked')?.value||hairFormData.fHairLength||'';
     hairFormData.fPerm=document.querySelector('input[name="f-perm"]:checked')?.value||hairFormData.fPerm||'';
@@ -798,10 +799,9 @@ function moveNext(s){currentSection=s;currentStep=0;if(s==='hair')hairSteps=buil
 // ── progress ──
 function updateProgressEmpty(){document.getElementById('progress-steps').innerHTML='';}
 function updateProgressFlow(section){
-  const labels={common:'📋 基本情報',flower:'🌷 花束',hair:'💄 ヘアメイク',outfit:'👗 衣装'};
-  const all=['common',...sectionsToFill];
-  document.getElementById('progress-steps').innerHTML=all.map((s,i)=>{
-    const done=s==='common'?currentSection!=='common':sectionStatus[s];
+  const labels={flower:'🌷 花束',hair:'💄 ヘアメイク',outfit:'👗 衣装'};
+  document.getElementById('progress-steps').innerHTML=sectionsToFill.map((s,i)=>{
+    const done=sectionStatus[s];
     const active=s===section;
     return`<div class="step-item ${done?'done':active?'active':''}"><div class="step-dot">${i+1}</div><div class="step-label">${labels[s]||s}</div></div>`;
   }).join('');
