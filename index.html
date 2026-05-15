@@ -298,7 +298,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbxMSIA9NU2H0RKH0F1VCHdIh2bv_1K4Lws0pXg1cX4HCMbULAOMCX1EEarhZo6A5lus/exec';
+const API='https://script.google.com/macros/s/AKfycby9ilW8E2IaKKbMZ3wXpl3I8-W_pOQ-s7VH-vA-d7xcJgibh6hs4bkfGoqhM7RkZYI/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -310,6 +310,8 @@ const PS={'fl-person':[],'fl-outfit':[],'fh-hair':[],'fh-makeup':[],'fh-length':
 // outfit data (loaded from GAS)
 let OUTFITS=[];
 let outfitLoaded=false;
+let SETTINGS={};
+let settingsLoaded=false;
 
 async function loadOutfits(){
   if(outfitLoaded)return;
@@ -318,6 +320,15 @@ async function loadOutfits(){
     if(r.ok)OUTFITS=r.data;
   }catch(e){}
   outfitLoaded=true;
+}
+
+async function loadSettings(){
+  if(settingsLoaded)return;
+  try{
+    const r=await apiGet({action:'getSettings'});
+    if(r.ok)SETTINGS=r.data;
+  }catch(e){}
+  settingsLoaded=true;
 }
 
 // routing
@@ -655,13 +666,12 @@ function goHair(){
 async function renderOutfit(){
   updateProgressFlow('outfit');
   const m=document.getElementById('form-main');
-  // ローディング表示
   m.innerHTML=`<div class="fade-in">
     <div class="section-badge outfit">👗 衣装レンタル</div>
     <div class="page-heading">衣装の選択</div>
     <div style="padding:40px 0;text-align:center;color:var(--muted);font-size:13px">衣装データを読み込み中…</div>
   </div>`;
-  await loadOutfits();
+  await Promise.all([loadOutfits(), loadSettings()]);
   renderOutfitContent();
 }
 
@@ -674,11 +684,7 @@ function renderOutfitContent(){
   m.innerHTML=`<div class="fade-in">
     <div class="section-badge outfit">👗 衣装レンタル</div>
     <div class="page-heading">衣装の選択</div>
-    <div class="notice-box" style="margin-bottom:20px">
-      プラン内ではメインで撮影される方の<strong>1コーデ分のみ無料</strong>でレンタルできます（例：トップス1着＋パンツ1着）。<br>
-      別でもう1コーデ追加されたい場合は、別途 <strong>¥3,300</strong> となります。<br>
-      追加をご希望の場合は、そのコーデも選択した上で補足メモにご記入ください。
-    </div>
+    ${SETTINGS.outfit_notice?`<div class="notice-box" style="margin-bottom:20px">${SETTINGS.outfit_notice}</div>`:''}
 
     <div class="field">
       <label>サイズカテゴリ</label>
