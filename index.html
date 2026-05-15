@@ -268,9 +268,17 @@
   <div class="admin-tabs">
     <button class="admin-tab active" id="tab-customers" onclick="switchAdminTab('customers')">📋 回答一覧</button>
     <button class="admin-tab" id="tab-upload" onclick="switchAdminTab('upload')">📷 衣装画像</button>
+    <button class="admin-tab" id="tab-settings" onclick="switchAdminTab('settings')">⚙️ 設定</button>
   </div>
   <div id="admin-tab-customers">
     <div class="admin-wrap" id="admin-wrap"><div class="loading-box">読み込み中…</div></div>
+  </div>
+  <div id="admin-tab-settings" style="display:none">
+    <div class="upload-tab-wrap" id="settings-wrap">
+      <div class="page-heading" style="margin-bottom:6px">テキスト設定</div>
+      <div class="page-desc">お客様画面に表示される文章を編集できます。編集後「保存」を押してください。</div>
+      <div id="settings-fields"><div class="loading-box">読み込み中…</div></div>
+    </div>
   </div>
   <div id="admin-tab-upload" style="display:none">
     <div class="upload-tab-wrap" id="upload-wrap">
@@ -298,7 +306,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycby9ilW8E2IaKKbMZ3wXpl3I8-W_pOQ-s7VH-vA-d7xcJgibh6hs4bkfGoqhM7RkZYI/exec';
+const API='https://script.google.com/macros/s/AKfycbzInDpN0R2V4YFBujUi4ClxH2sJ7455z7GQHNx-eka3XDhfCFuedI0kNia7v1AoYJ-Q/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -684,7 +692,7 @@ function renderOutfitContent(){
   m.innerHTML=`<div class="fade-in">
     <div class="section-badge outfit">👗 衣装レンタル</div>
     <div class="page-heading">衣装の選択</div>
-    ${SETTINGS.outfit_notice?`<div class="notice-box" style="margin-bottom:20px">${SETTINGS.outfit_notice}</div>`:''}
+    ${SETTINGS.outfit_notice?`<div class="notice-box" style="margin-bottom:20px;background:var(--prop-light);border-left-color:var(--prop)">${SETTINGS.outfit_notice.replace(/¥([0-9,]+)/g,'<strong style="color:var(--prop)">¥$1</strong>').replace(/1コーデ分のみ無料/g,'<strong style="color:var(--prop)">1コーデ分のみ無料</strong>')}</div>`:''}
 
     <div class="field">
       <label>サイズカテゴリ</label>
@@ -1090,10 +1098,53 @@ async function initSalon(id,section){
 let currentAdminTab = 'customers';
 function switchAdminTab(tab) {
   currentAdminTab = tab;
-  document.getElementById('tab-customers').classList.toggle('active', tab === 'customers');
-  document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
-  document.getElementById('admin-tab-customers').style.display = tab === 'customers' ? '' : 'none';
-  document.getElementById('admin-tab-upload').style.display = tab === 'upload' ? '' : 'none';
+  ['customers','upload','settings'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', tab === t);
+    document.getElementById('admin-tab-'+t).style.display = tab === t ? '' : 'none';
+  });
+  if(tab === 'settings') loadSettingsTab();
+}
+
+async function loadSettingsTab() {
+  const wrap = document.getElementById('settings-fields');
+  wrap.innerHTML = '<div class="loading-box">読み込み中…</div>';
+  try {
+    const r = await apiGet({action:'getSettings'});
+    if(!r.ok) throw new Error(r.error);
+    const s = r.data;
+    const fields = [
+      { key:'outfit_notice', label:'👗 衣装レンタル 注意書き', placeholder:'プラン内では…' },
+    ];
+    wrap.innerHTML = fields.map(f => `
+      <div style="background:var(--warm-white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">
+        <label style="display:block;font-size:13px;font-weight:500;margin-bottom:8px;">${f.label}</label>
+        <textarea id="setting-${f.key}" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:300;outline:none;resize:vertical;min-height:100px;line-height:1.7;"
+          placeholder="${f.placeholder}">${s[f.key]||''}</textarea>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+          <button class="btn-next" style="flex:0 0 auto;padding:10px 24px;font-size:13px;" onclick="saveSetting('${f.key}')">保存する</button>
+          <span id="save-result-${f.key}" style="font-size:12px;color:var(--success);display:none;">✓ 保存しました</span>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    wrap.innerHTML = '<p style="color:var(--error);font-size:13px">読み込みに失敗しました。</p>';
+  }
+}
+
+async function saveSetting(key) {
+  const value = document.getElementById('setting-'+key)?.value || '';
+  const resultEl = document.getElementById('save-result-'+key);
+  try {
+    const r = await apiPost({action:'saveSetting', key, value});
+    if(r.ok) {
+      if(resultEl){ resultEl.style.display='inline'; setTimeout(()=>resultEl.style.display='none', 3000); }
+      // settingsキャッシュをリセットして次回再取得
+      settingsLoaded = false;
+    } else {
+      alert('保存に失敗しました：' + (r.error||''));
+    }
+  } catch(e) {
+    alert('通信エラーが発生しました。');
+  }
 }
 
 // ══ UPLOAD TAB ══
