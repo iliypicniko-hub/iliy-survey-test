@@ -245,6 +245,13 @@
   .register-result.show{display:block;}
   .register-result.ok{background:#EAF3DE;color:#3B6D11;border:1px solid #8DC86A;}
   .register-result.err{background:#FDECEA;color:var(--error);border:1px solid #E8A0A0;}
+
+  /* RICH TEXT EDITOR */
+  .rte-toolbar{display:flex;align-items:center;gap:4px;padding:8px 10px;background:var(--cream);border:1px solid var(--border);border-radius:8px 8px 0 0;flex-wrap:wrap;}
+  .rte-toolbar button{padding:4px 10px;background:var(--warm-white);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:13px;transition:all .2s;}
+  .rte-toolbar button:hover{background:var(--accent-light);border-color:var(--accent);}
+  .rte-editor{min-height:120px;padding:12px 14px;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;background:var(--warm-white);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:300;line-height:1.8;outline:none;}
+  .rte-editor:focus{border-color:var(--accent);}
 </style>
 </head>
 <body>
@@ -477,14 +484,15 @@ function renderCurrentSection(){
 
 // ── FLOWER ──
 const flowerStepList=['fl-main','fl-photo','fl-confirm'];
-function renderFlower(){
+async function renderFlower(){
+  if(!settingsLoaded) await loadSettings();
   updateProgressFlow('flower');
   const s=flowerStepList[currentStep];
   const m=document.getElementById('form-main');
   if(s==='fl-main')m.innerHTML=`<div class="fade-in">
     <div class="section-badge flower">🌷 花束オプション</div>
     <div class="page-heading">花束のご要望</div>
-    <div class="notice-box flower-n"><strong>🌸 rihでの花束をご希望ありがとうございます✨</strong><br>お客様の雰囲気にあった花束をお作りします。※細かいお花のご指定はできかねますのでご了承ください🙇</div>
+    <div class="notice-box flower-n" style="white-space:pre-line">${SETTINGS.flower_notice||'🌸 rihでの花束をご希望ありがとうございます✨\nお客様の雰囲気にあった花束をお作りします。※細かいお花のご指定はできかねますのでご了承ください🙇'}</div>
     <div class="field">
       <label>ご希望の雰囲気<span class="req">必須</span></label>
       ${radioGroup('fl-mood',['rihへお任せ','シンプル','ナチュラル','キュート','クール'],2)}
@@ -538,7 +546,8 @@ function buildHairSteps(){
   if(hairOptionType==='male')return[...c,...male,'h-confirm'];
   return[...c,...f,...male,'h-confirm'];
 }
-function renderHair(){
+async function renderHair(){
+  if(!settingsLoaded) await loadSettings();
   updateProgressFlow('hair');
   const m=document.getElementById('form-main');
   m.innerHTML=buildHairPage(hairSteps[currentStep]);
@@ -550,7 +559,7 @@ function buildHairPage(s){
     case 'h-basic':return`<div class="fade-in">
       <div class="section-badge hair-f">💄 ヘアメイクオプション</div>
       <div class="page-heading">ヘアメイクについて</div>
-      <div class="notice-box"><strong>🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。</strong><br><br><strong>🔶 メイクアイテムのお持ち込みは自由です。</strong>敏感肌の方は普段使用のアイテムをお持ち込みください。<br><br>＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。</div>
+      <div class="notice-box" style="white-space:pre-line">${SETTINGS.hair_notice||'🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。\n\n🔶 メイクアイテムのお持ち込みは自由です。敏感肌の方は普段使用のアイテムをお持ち込みください。\n\n＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。'}</div>
       ${hairOptionType==='both'?`<div class="field"><label>男性のお名前<span class="req">必須</span></label><input type="text" id="h-name-male" placeholder="山田 太郎" value="${commonData.nameMale||''}"><div class="error-msg" id="err-h-name-male">お名前を入力してください</div></div>`:''}
       <div class="nav"><button class="btn-back" onclick="renderSelector()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
@@ -803,7 +812,7 @@ function showSectionDone(section){
   const nextIdx=sectionsToFill.indexOf(section)+1;
   const m=document.getElementById('form-main');
   if(nextIdx>=sectionsToFill.length){
-    m.innerHTML=`<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべての回答が完了しました</h2><p>ご回答ありがとうございます。<br>内容はスタジオが確認し、担当者に共有いたします。<br><br>当日お会いできるのを楽しみにしております。</p></div>`;
+    m.innerHTML=`<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべての回答が完了しました</h2><p>${(SETTINGS.complete_message||'ご回答ありがとうございます。\n内容はスタジオが確認し、担当者に共有いたします。\n\n当日お会いできるのを楽しみにしております。').replace(/\n/g,'<br>')}</p></div>`;
     return;
   }
   const next=sectionsToFill[nextIdx];
@@ -1113,31 +1122,60 @@ async function loadSettingsTab() {
     if(!r.ok) throw new Error(r.error);
     const s = r.data;
     const fields = [
-      { key:'outfit_notice', label:'👗 衣装レンタル 注意書き', placeholder:'プラン内では…' },
+      { key:'flower_notice', label:'🌷 花束 注意書き', default:'🌸 rihでの花束をご希望ありがとうございます✨\nお客様の雰囲気にあった花束をお作りします。※細かいお花のご指定はできかねますのでご了承ください🙇' },
+      { key:'hair_notice', label:'💄 ヘアメイク 注意書き', default:'🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。\n\n🔶 メイクアイテムのお持ち込みは自由です。敏感肌の方は普段使用のアイテムをお持ち込みください。\n\n＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。' },
+      { key:'outfit_notice', label:'👗 衣装レンタル 注意書き', default:'プラン内ではメインで撮影される方の1コーデ分のみ無料でレンタルできます（例：トップス1着＋パンツ1着）。\n別でもう1コーデ追加されたい場合は、別途 ¥3,300 となります。\n追加をご希望の場合は、そのコーデも選択した上で補足メモにご記入ください。' },
+      { key:'complete_message', label:'✅ 回答完了メッセージ', default:'ご回答ありがとうございます。\n内容はスタジオが確認し、担当者に共有いたします。\n\n当日お会いできるのを楽しみにしております。' },
     ];
-    wrap.innerHTML = fields.map(f => `
-      <div style="background:var(--warm-white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:500;margin-bottom:8px;">${f.label}</label>
-        <textarea id="setting-${f.key}" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:300;outline:none;resize:vertical;min-height:100px;line-height:1.7;"
-          placeholder="${f.placeholder}">${s[f.key]||''}</textarea>
+
+    wrap.innerHTML = `
+      <div style="background:var(--accent-light);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:12px;line-height:1.8;color:var(--dark)">
+        <strong>使い方：</strong>テキストを選択してからボタンを押すと装飾できます。「保存する」を押すとお客様画面に反映されます。
+      </div>
+      ${fields.map(f => `
+      <div style="background:var(--warm-white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:12px;">${f.label}</div>
+        <div class="rte-toolbar" data-target="rte-${f.key}">
+          <button type="button" onclick="rteCmd('rte-${f.key}','bold')" title="太字"><b>B</b></button>
+          <button type="button" onclick="rteCmd('rte-${f.key}','italic')" title="斜体"><i>I</i></button>
+          <span style="width:1px;background:var(--border);margin:0 4px;align-self:stretch;display:inline-block"></span>
+          <button type="button" onclick="rteColor('rte-${f.key}','#C4956A')" style="color:#C4956A" title="オレンジ">●</button>
+          <button type="button" onclick="rteColor('rte-${f.key}','#D4729A')" style="color:#D4729A" title="ピンク">●</button>
+          <button type="button" onclick="rteColor('rte-${f.key}','#6A8AC4')" style="color:#6A8AC4" title="ブルー">●</button>
+          <button type="button" onclick="rteColor('rte-${f.key}','#5A8A6A')" style="color:#5A8A6A" title="グリーン">●</button>
+          <button type="button" onclick="rteColor('rte-${f.key}','#1C1A18')" style="color:#1C1A18" title="黒">●</button>
+          <span style="width:1px;background:var(--border);margin:0 4px;align-self:stretch;display:inline-block"></span>
+          <button type="button" onclick="rteCmd('rte-${f.key}','removeFormat')" title="書式をクリア" style="font-size:11px">✕</button>
+        </div>
+        <div class="rte-editor" id="rte-${f.key}" contenteditable="true">${s[f.key] || f.default.replace(/\n/g,'<br>')}</div>
         <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
           <button class="btn-next" style="flex:0 0 auto;padding:10px 24px;font-size:13px;" onclick="saveSetting('${f.key}')">保存する</button>
           <span id="save-result-${f.key}" style="font-size:12px;color:var(--success);display:none;">✓ 保存しました</span>
         </div>
-      </div>`).join('');
+      </div>`).join('')}`;
   } catch(e) {
     wrap.innerHTML = '<p style="color:var(--error);font-size:13px">読み込みに失敗しました。</p>';
   }
 }
 
+function rteCmd(id, cmd) {
+  document.getElementById(id).focus();
+  document.execCommand(cmd, false, null);
+}
+function rteColor(id, color) {
+  document.getElementById(id).focus();
+  document.execCommand('foreColor', false, color);
+}
+
 async function saveSetting(key) {
-  const value = document.getElementById('setting-'+key)?.value || '';
+  const editor = document.getElementById('rte-'+key);
+  if(!editor) return;
+  const value = editor.innerHTML;
   const resultEl = document.getElementById('save-result-'+key);
   try {
     const r = await apiPost({action:'saveSetting', key, value});
     if(r.ok) {
       if(resultEl){ resultEl.style.display='inline'; setTimeout(()=>resultEl.style.display='none', 3000); }
-      // settingsキャッシュをリセットして次回再取得
       settingsLoaded = false;
     } else {
       alert('保存に失敗しました：' + (r.error||''));
