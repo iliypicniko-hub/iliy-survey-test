@@ -209,6 +209,25 @@
   .lightbox.open{display:flex;}
   .lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;}
   .lightbox-close{position:absolute;top:16px;right:20px;font-size:28px;color:white;cursor:pointer;}
+  .alert-banner{background:#FDECEA;border:1px solid #E8A0A0;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--error);}
+  .alert-banner-title{font-weight:500;margin-bottom:6px;}
+  .alert-item{font-size:12px;padding:3px 0;}
+  .create-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .create-field label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;}
+  .create-field input,.create-field select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;outline:none;}
+  .create-field input:focus,.create-field select:focus{border-color:var(--accent);}
+  .action-btns{display:flex;gap:8px;margin-top:14px;}
+  .btn-complete{flex:1;padding:10px;background:var(--success);border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;color:white;cursor:pointer;}
+  .btn-complete:hover{background:#4A7A5A;}
+  .btn-delete{padding:10px 16px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:var(--error);cursor:pointer;}
+  .btn-delete:hover{background:#FDECEA;}
+  .badge-urgent{display:inline-block;background:var(--error);color:white;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;}
+  .admin-card.urgent{border-color:var(--error);box-shadow:0 0 0 2px rgba(196,106,106,.15);}
+  .admin-card.urgent .admin-card-head{background:#FDECEA;}
+  .copied-badge{font-size:10px;background:#EAF3DE;color:#3B6D11;border:1px solid #8DC86A;padding:1px 7px;border-radius:10px;}
+  .btn-copy.was-copied{background:#888;}
+  .section-url-label{font-size:11px;color:var(--dark);font-weight:500;margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+  .dash-card.pending{border-left:4px solid var(--accent);}
 
   /* ADMIN TABS */
   .admin-tabs{display:flex;background:var(--warm-white);border-bottom:1px solid var(--border);padding:0 20px;}
@@ -313,7 +332,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbzInDpN0R2V4YFBujUi4ClxH2sJ7455z7GQHNx-eka3XDhfCFuedI0kNia7v1AoYJ-Q/exec';
+const API='https://script.google.com/macros/s/AKfycbyRJ9TULeeZeBkHoNYregpjRgl31bLVVVZGlrZ6BKteP7OUcQSTfsDGVD9HyukWE4o4/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -861,59 +880,85 @@ function removePhoto(key,i){PS[key].splice(i,1);renderPreviews(key);}
 let allCustomers=[];
 async function initAdmin(){
   try{
-    const r=await apiGet({action:'getAllCustomers'});
-    if(!r.ok)throw new Error(r.error);
-    allCustomers=r.data.reverse();
+    const[custResult]=await Promise.all([apiGet({action:'getAllCustomers'}),loadSettings()]);
+    if(!custResult.ok)throw new Error(custResult.error);
+    allCustomers=custResult.data.reverse();
     showAdminDash();
   }catch(e){
     document.getElementById('admin-wrap').innerHTML='<p style="text-align:center;padding:60px 0;color:var(--error);font-size:14px">読み込みに失敗しました。</p>';
     document.getElementById('admin-sub').textContent='エラー';
   }
 }
-function isComplete(c){const ss=c.sectionSentStatus||{};return ss.flower&&ss.hair&&ss.outfit;}
+function isAllAnswered(c){
+  const ss=c.sectionSentStatus||{};
+  const needsFlower=c.flowerOption&&c.flowerOption!=='none';
+  const needsHair=c.hairOption&&c.hairOption!=='none';
+  return(!needsFlower||ss.flower)&&(!needsHair||ss.hair)&&ss.outfit;
+}
+function getAlertDays(){return parseInt(SETTINGS.alert_days||'7',10);}
+function isUrgent(c){
+  if(!c.shootDate||c.completed)return false;
+  const days=getAlertDays();
+  const shoot=new Date(c.shootDate);
+  const now=new Date();
+  const diff=Math.ceil((shoot-now)/(1000*60*60*24));
+  return diff<=days&&diff>=0&&!isAllAnswered(c);
+}
 
 function showAdminDash(){
-  const newItems=allCustomers.filter(c=>!isComplete(c));
-  const doneItems=allCustomers.filter(c=>isComplete(c));
+  const pendingItems=allCustomers.filter(c=>!c.completed);
+  const doneItems=allCustomers.filter(c=>c.completed);
+  const urgentItems=pendingItems.filter(c=>isUrgent(c));
   document.getElementById('admin-sub').textContent='全'+allCustomers.length+'件';
+  let urgentHtml='';
+  if(urgentItems.length>0){
+    urgentHtml=`<div class="alert-banner"><div class="alert-banner-title">⚠️ 撮影${getAlertDays()}日以内で未回答のお客様（${urgentItems.length}名）</div>${urgentItems.map(c=>`<div class="alert-item">・${c.name} 様　撮影日：${fmtD(c.shootDate)}</div>`).join('')}</div>`;
+  }
   document.getElementById('admin-wrap').innerHTML=`
+    ${urgentHtml}
     <div class="create-customer-wrap">
       <div class="create-customer-title">📋 お客様URLの発行</div>
-      <div class="create-customer-form">
-        <input type="text" id="new-name" placeholder="お客様のお名前（例：山田 花子）">
-        <button class="btn-create" onclick="createCustomer()">URLを発行</button>
+      <div class="create-fields">
+        <div class="create-field"><label>お客様名<span style="color:var(--error)">必須</span></label><input type="text" id="new-name" placeholder="山田 花子"></div>
+        <div class="create-field"><label>撮影日<span style="color:var(--error)">必須</span></label><input type="date" id="new-date"></div>
+        <div class="create-field"><label>花束オプション</label><select id="new-flower"><option value="none">花束なし</option><option value="flower">花束あり</option></select></div>
+        <div class="create-field"><label>ヘアメイクオプション</label><select id="new-hair"><option value="none">ヘアメイクなし</option><option value="female">女性ヘアセット＆メイク</option><option value="male">男性ヘアセット</option><option value="both">両方（女性＋男性）</option></select></div>
       </div>
+      <button class="btn-create" onclick="createCustomer()">URLを発行する</button>
       <div class="created-url-box" id="created-url-box">
         <div style="font-size:11px;color:var(--muted);margin-bottom:6px">お客様に送るURL：</div>
         <div class="share-row"><span class="share-url-text" id="created-url-text"></span><button class="btn-copy" onclick="copyText(document.getElementById('created-url-text').textContent,this)">コピー</button></div>
       </div>
     </div>
     <div class="dashboard">
-      <div class="dash-card new" onclick="showAdminList('new')"><div class="dash-count">${newItems.length}</div><div class="dash-label">未完了・新着</div><div class="dash-sub">一部または全部未回答</div></div>
-      <div class="dash-card done" onclick="showAdminList('done')"><div class="dash-count">${doneItems.length}</div><div class="dash-label">全回答完了</div><div class="dash-sub">全セクション回答済み</div></div>
+      <div class="dash-card pending" onclick="showAdminList('pending')"><div class="dash-count">${pendingItems.length}</div><div class="dash-label">要確認</div><div class="dash-sub">未回答・回答済み未対応</div></div>
+      <div class="dash-card done" onclick="showAdminList('done')"><div class="dash-count">${doneItems.length}</div><div class="dash-label">対応済み</div><div class="dash-sub">確認完了</div></div>
     </div>`;
 }
 
 async function createCustomer(){
-  const nameEl=document.getElementById('new-name');
-  const name=nameEl.value.trim();
-  if(!name){nameEl.style.borderColor='var(--error)';return;}
-  nameEl.style.borderColor='';
+  const name=document.getElementById('new-name')?.value.trim();
+  const shootDate=document.getElementById('new-date')?.value;
+  const flowerOption=document.getElementById('new-flower')?.value||'none';
+  const hairOption=document.getElementById('new-hair')?.value||'none';
+  if(!name){alert('お客様名を入力してください');return;}
+  if(!shootDate){alert('撮影日を入力してください');return;}
   try{
-    const r=await apiPost({action:'createCustomer',name});
+    const r=await apiPost({action:'createCustomer',name,shootDate,flowerOption,hairOption});
     if(!r.ok)throw new Error(r.error);
     const url=location.origin+location.pathname+'?cid='+r.cid;
     document.getElementById('created-url-text').textContent=url;
     document.getElementById('created-url-box').classList.add('show');
-    nameEl.value='';
-    allCustomers.unshift({id:r.cid,name,sectionSentStatus:{},createdAt:new Date().toString()});
+    document.getElementById('new-name').value='';
+    document.getElementById('new-date').value='';
+    allCustomers.unshift({id:r.cid,name,shootDate,flowerOption,hairOption,sectionSentStatus:{},completed:false,copiedSections:{},createdAt:new Date().toString()});
     document.getElementById('admin-sub').textContent='全'+allCustomers.length+'件';
   }catch(e){alert('URL発行に失敗しました。');}
 }
 
 function showAdminList(type){
-  const items=type==='new'?allCustomers.filter(c=>!isComplete(c)):allCustomers.filter(c=>isComplete(c));
-  const title=type==='new'?'未完了・新着':'全回答完了';
+  const items=type==='pending'?allCustomers.filter(c=>!c.completed):allCustomers.filter(c=>c.completed);
+  const title=type==='pending'?'要確認':'対応済み';
   document.getElementById('admin-wrap').innerHTML=`
     <div class="list-header"><button class="btn-back-list" onclick="showAdminDash()">← トップへ</button><span class="list-title">${title}（${items.length}件）</span></div>
     ${items.length===0?'<p style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px">該当するお客様はいません</p>':items.map(buildAdminCard).join('')}`;
@@ -922,26 +967,39 @@ function showAdminList(type){
 function buildAdminCard(c){
   const base=location.origin+location.pathname;
   const ss=c.sectionSentStatus||{};
-  const badge=!isComplete(c)?'<span class="badge-new">NEW</span>':'';
-  const secSt=(sec,label)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px">${label}</span><span class="sec-status ${ss[sec]?'ok':'ng'}">${ss[sec]?'回答済み':'未回答'}</span></div>`;
-  return`<div class="admin-card">
+  const copied=c.copiedSections||{};
+  const urgent=isUrgent(c);
+  const answered=isAllAnswered(c);
+  const needsFlower=c.flowerOption&&c.flowerOption!=='none';
+  const needsHair=c.hairOption&&c.hairOption!=='none';
+  const badge=answered&&!c.completed?'<span class="badge-new">全回答済</span>':!answered?'<span style="display:inline-block;background:#FEF3E2;color:#A05C00;border:1px solid #F5C26B;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">回答待ち</span>':'';
+  const urgentBadge=urgent?'<span class="badge-urgent">⚠️ 期限注意</span>':'';
+  const secSt=(sec,label,needed)=>{
+    if(!needed)return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px;color:var(--muted)">${label}</span><span style="font-size:10px;color:var(--muted)">対象外</span></div>`;
+    return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px">${label}</span><span class="sec-status ${ss[sec]?'ok':'ng'}">${ss[sec]?'回答済み':'未回答'}</span></div>`;
+  };
+  return`<div class="admin-card${urgent?' urgent':''}" id="card-${c.id}">
     <div class="admin-card-head">
-      <div><span class="admin-card-name">${c.name} 様</span>${badge}</div>
-      <div class="admin-card-meta">発行：${fmtDT(c.createdAt)}</div>
+      <div><span class="admin-card-name">${c.name} 様</span>${badge}${urgentBadge}</div>
+      <div class="admin-card-meta">撮影日：${fmtD(c.shootDate)}　発行：${fmtDT(c.createdAt)}</div>
     </div>
     <div class="admin-card-body">
       <div style="margin-bottom:14px">
-        ${secSt('flower','🌷 花束')}
-        ${secSt('hair','💄 ヘアメイク')}
-        ${secSt('outfit','👗 衣装レンタル')}
+        ${secSt('flower','🌷 花束',needsFlower)}
+        ${secSt('hair','💄 ヘアメイク',needsHair)}
+        ${secSt('outfit','👗 衣装レンタル',true)}
       </div>
       <div class="section-urls">
         <div class="section-urls-title">担当者への共有URL</div>
-        ${['flower','hair','outfit'].map(sec=>{
+        ${[needsFlower?'flower':null,needsHair?'hair':null,'outfit'].filter(Boolean).map(sec=>{
           const lb={flower:'🌷 花束担当者',hair:'💄 ヘアメイク担当者',outfit:'👗 衣装担当者'};
           const url=`${base}?sid=${c.id}&section=${sec}`;
-          return`<div class="section-url-row"><div class="section-url-label">${lb[sec]}</div>
-            <div class="share-row"><span class="share-url-text">${url}</span><button class="btn-copy" onclick="copyText('${url}',this)">コピー</button></div></div>`;
+          const wasCopied=copied[sec];
+          return`<div class="section-url-row">
+            <div class="section-url-label">${lb[sec]}${wasCopied?'<span class="copied-badge">コピー済み</span>':''}${ss[sec]?'<span class="sec-status ok" style="margin-left:4px">回答済み</span>':''}</div>
+            <div class="share-row"><span class="share-url-text">${url}</span>
+              <button class="btn-copy${wasCopied?' was-copied':''}" onclick="copyUrlAndMark('${url}','${c.id}','${sec}',this)">${wasCopied?'再コピー':'コピー'}</button>
+            </div></div>`;
         }).join('')}
       </div>
       <div style="margin-top:10px;background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
@@ -952,10 +1010,38 @@ function buildAdminCard(c){
         <button id="det-btn-${c.id}" onclick="loadDetail('${c.id}')" style="width:100%;padding:10px;background:var(--cream);border:1px dashed var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;">📋 回答詳細を表示する</button>
         <div id="det-${c.id}"></div>
       </div>
+      ${!c.completed?`<div class="action-btns">
+        <button class="btn-complete" onclick="completeCustomer('${c.id}')">✓ 対応済みにする</button>
+        <button class="btn-delete" onclick="deleteCustomer('${c.id}')">🗑 削除</button>
+      </div>`:`<div class="action-btns"><button class="btn-delete" onclick="deleteCustomer('${c.id}')">🗑 削除</button></div>`}
     </div>
   </div>`;
 }
 
+async function copyUrlAndMark(url,cid,section,btn){
+  await navigator.clipboard.writeText(url);
+  btn.textContent='コピー完了!';btn.classList.add('copied');
+  setTimeout(()=>{btn.textContent='再コピー';btn.classList.remove('copied');btn.classList.add('was-copied');},2000);
+  const cx=allCustomers.find(x=>x.id===cid);
+  if(cx){if(!cx.copiedSections)cx.copiedSections={};cx.copiedSections[section]=true;}
+  const label=btn.closest('.section-url-row')?.querySelector('.section-url-label');
+  if(label&&!label.querySelector('.copied-badge')){const b=document.createElement('span');b.className='copied-badge';b.textContent='コピー済み';label.appendChild(b);}
+  apiPost({action:'markUrlCopied',cid,section});
+}
+async function completeCustomer(id){
+  if(!confirm('対応済みに移動しますか？'))return;
+  try{
+    const r=await apiPost({action:'markComplete',cid:id});
+    if(r.ok){const cx=allCustomers.find(x=>x.id===id);if(cx)cx.completed=true;showAdminList('pending');}
+  }catch(e){alert('エラーが発生しました。');}
+}
+async function deleteCustomer(id){
+  if(!confirm('このお客様のデータを完全に削除しますか？\nこの操作は取り消せません。'))return;
+  try{
+    const r=await apiPost({action:'deleteCustomer',cid:id});
+    if(r.ok){allCustomers=allCustomers.filter(x=>x.id!==id);showAdminDash();}
+  }catch(e){alert('削除に失敗しました。');}
+}
 async function loadDetail(id){
   const btn=document.getElementById('det-btn-'+id);
   btn.textContent='読み込み中…';btn.disabled=true;
@@ -1234,6 +1320,16 @@ async function saveSettingField(key, colorKey) {
 }
 
 // Keep backward compat
+async function saveSimpleSetting(key){
+  const el=document.getElementById('setting-'+key);if(!el)return;
+  const value=el.value;
+  const resultEl=document.getElementById('save-result-'+key);
+  try{
+    const r=await apiPost({action:'saveSetting',key,value});
+    if(r.ok){SETTINGS[key]=value;settingsLoaded=false;if(resultEl){resultEl.style.display='inline';setTimeout(()=>resultEl.style.display='none',3000);}}
+    else alert('保存に失敗しました');
+  }catch(e){alert('通信エラー');}
+}
 async function saveSetting(key) { await saveSettingField(key, null); }
 
 
