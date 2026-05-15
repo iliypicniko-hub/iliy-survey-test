@@ -209,6 +209,42 @@
   .lightbox.open{display:flex;}
   .lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;}
   .lightbox-close{position:absolute;top:16px;right:20px;font-size:28px;color:white;cursor:pointer;}
+
+  /* ADMIN TABS */
+  .admin-tabs{display:flex;background:var(--warm-white);border-bottom:1px solid var(--border);padding:0 20px;}
+  .admin-tab{padding:12px 20px;background:transparent;border:none;border-bottom:3px solid transparent;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;margin-bottom:-1px;}
+  .admin-tab:hover{color:var(--dark);}
+  .admin-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  /* UPLOAD TAB */
+  .upload-tab-wrap{max-width:740px;margin:0 auto;padding:24px 20px 60px;}
+  .upload-item{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+  .upload-item-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);}
+  .upload-item-thumb{width:60px;height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;background:#f0ebe4;}
+  .upload-item-thumb img{width:100%;height:100%;object-fit:cover;}
+  .upload-item-body{padding:14px 16px;}
+  .upload-item-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .upload-item-field label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;}
+  .upload-item-field input,.upload-item-field select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:'Noto Sans JP',sans-serif;font-size:13px;outline:none;}
+  .upload-item-field input:focus,.upload-item-field select:focus{border-color:var(--accent);}
+  .upload-item-url{display:flex;gap:8px;align-items:center;margin-top:8px;}
+  .upload-item-url input{flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--muted);background:var(--cream);outline:none;}
+  .status-badge{font-size:11px;padding:3px 10px;border-radius:10px;white-space:nowrap;}
+  .status-badge.uploading{background:#FEF3E2;color:#A05C00;border:1px solid #F5C26B;}
+  .status-badge.done{background:#EAF3DE;color:#3B6D11;border:1px solid #8DC86A;}
+  .status-badge.error{background:#FDECEA;color:var(--error);border:1px solid #E8A0A0;}
+  .drop-zone{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;background:var(--warm-white);cursor:pointer;transition:all .2s;position:relative;margin-bottom:16px;}
+  .drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:var(--accent-light);}
+  .drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .drop-zone-icon{font-size:32px;margin-bottom:10px;opacity:.5;}
+  .drop-zone-text{font-size:13px;color:var(--muted);line-height:1.8;}
+  .drop-zone-text strong{color:var(--accent);}
+  .btn-register{padding:10px 20px;background:var(--success);border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;color:white;cursor:pointer;transition:all .2s;}
+  .btn-register:hover{background:#4A7A5A;}
+  .btn-register:disabled{background:var(--muted);cursor:not-allowed;}
+  .register-result{margin-top:12px;font-size:12px;padding:10px 14px;border-radius:8px;display:none;}
+  .register-result.show{display:block;}
+  .register-result.ok{background:#EAF3DE;color:#3B6D11;border:1px solid #8DC86A;}
+  .register-result.err{background:#FDECEA;color:var(--error);border:1px solid #E8A0A0;}
 </style>
 </head>
 <body>
@@ -226,10 +262,28 @@
 </div>
 <div id="admin-app" style="display:none">
   <div class="header">
-    <div class="header-title">管理画面 — 回答一覧</div>
+    <div class="header-title">管理画面</div>
     <div class="header-sub" id="admin-sub">読み込み中…</div>
   </div>
-  <div class="admin-wrap" id="admin-wrap"><div class="loading-box">読み込み中…</div></div>
+  <div class="admin-tabs">
+    <button class="admin-tab active" id="tab-customers" onclick="switchAdminTab('customers')">📋 回答一覧</button>
+    <button class="admin-tab" id="tab-upload" onclick="switchAdminTab('upload')">📷 衣装画像</button>
+  </div>
+  <div id="admin-tab-customers">
+    <div class="admin-wrap" id="admin-wrap"><div class="loading-box">読み込み中…</div></div>
+  </div>
+  <div id="admin-tab-upload" style="display:none">
+    <div class="upload-tab-wrap" id="upload-wrap">
+      <div class="page-heading" style="margin-bottom:6px">衣装画像のアップロード</div>
+      <div class="page-desc">画像をアップロードしてoutfitsシートに登録します。</div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" accept="image/*" multiple onchange="handleUploadFiles(event)">
+        <div class="drop-zone-icon">📷</div>
+        <div class="drop-zone-text"><strong>タップして写真を選ぶ</strong><br>または画像をここにドロップ<br>複数枚まとめてOK</div>
+      </div>
+      <div id="upload-items"></div>
+    </div>
+  </div>
 </div>
 <div id="salon-app" style="display:none">
   <div class="header">
@@ -1020,6 +1074,170 @@ async function initSalon(id,section){
     </div>`;
   }catch(e){
     document.getElementById('salon-wrap').innerHTML='<p style="text-align:center;padding:60px 0;color:var(--muted);font-size:14px">URLが無効か読み込みに失敗しました。</p>';
+  }
+}
+
+
+// ══ ADMIN TABS ══
+let currentAdminTab = 'customers';
+function switchAdminTab(tab) {
+  currentAdminTab = tab;
+  document.getElementById('tab-customers').classList.toggle('active', tab === 'customers');
+  document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
+  document.getElementById('admin-tab-customers').style.display = tab === 'customers' ? '' : 'none';
+  document.getElementById('admin-tab-upload').style.display = tab === 'upload' ? '' : 'none';
+}
+
+// ══ UPLOAD TAB ══
+let uploadQueue = []; // {file, name, category, status, url}
+
+function handleUploadFiles(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(f => {
+    uploadQueue.push({ file: f, name: f.name.replace(/\.[^.]+$/, ''), category: '80cm', status: 'pending', url: '' });
+  });
+  renderUploadItems();
+  // reset input so same file can be added again
+  e.target.value = '';
+}
+
+// drag & drop
+document.addEventListener('DOMContentLoaded', () => {
+  const dz = document.getElementById('drop-zone');
+  if (!dz) return;
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    files.forEach(f => uploadQueue.push({ file: f, name: f.name.replace(/\.[^.]+$/, ''), category: '80cm', status: 'pending', url: '' }));
+    renderUploadItems();
+  });
+});
+
+function renderUploadItems() {
+  const wrap = document.getElementById('upload-items');
+  if (!wrap) return;
+  if (uploadQueue.length === 0) { wrap.innerHTML = ''; return; }
+
+  const allDone = uploadQueue.every(i => i.status === 'done');
+  const anyPending = uploadQueue.some(i => i.status === 'pending');
+
+  wrap.innerHTML = uploadQueue.map((item, idx) => {
+    const preview = item.status !== 'pending' || item.previewUrl ? `<img src="${item.previewUrl||item.url||''}" onerror="this.style.display='none'">` : '';
+    const statusHtml = item.status === 'uploading' ? '<span class="status-badge uploading">アップロード中…</span>'
+      : item.status === 'done' ? '<span class="status-badge done">✓ 完了</span>'
+      : item.status === 'error' ? '<span class="status-badge error">エラー</span>'
+      : '';
+    const urlHtml = item.url ? `<div class="upload-item-url">
+      <input type="text" value="${item.url}" readonly onclick="this.select()">
+      <button class="btn-copy" onclick="copyText('${item.url}',this)" style="font-size:11px">コピー</button>
+    </div>` : '';
+    return `<div class="upload-item" id="uitem-${idx}">
+      <div class="upload-item-head">
+        <div class="upload-item-thumb">${preview}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500;margin-bottom:2px">${item.file.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${(item.file.size/1024).toFixed(0)} KB</div>
+        </div>
+        ${statusHtml}
+        <button onclick="removeUploadItem(${idx})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px">✕</button>
+      </div>
+      <div class="upload-item-body">
+        <div class="upload-item-fields">
+          <div class="upload-item-field">
+            <label>衣装名<span style="color:var(--accent)">必須</span></label>
+            <input type="text" value="${item.name}" onchange="uploadQueue[${idx}].name=this.value" placeholder="例：ドレスA（白）">
+          </div>
+          <div class="upload-item-field">
+            <label>カテゴリ<span style="color:var(--accent)">必須</span></label>
+            <select onchange="uploadQueue[${idx}].category=this.value">
+              ${['80cm','90cm','100cm','マタニティ'].map(c=>`<option value="${c}"${item.category===c?' selected':''}>${c}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        ${urlHtml}
+        ${item.status === 'pending' ? `<button class="btn-submit" style="width:100%;margin-top:4px" onclick="uploadOne(${idx})">アップロードしてURLを取得</button>` : ''}
+        ${item.status === 'done' ? `<button class="btn-register" style="width:100%;margin-top:8px" onclick="registerOne(${idx})">📋 outfitsシートに登録する</button>
+          <div id="reg-result-${idx}" class="register-result"></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // set preview images
+  uploadQueue.forEach((item, idx) => {
+    if (!item.previewUrl && item.file && item.status === 'pending') {
+      const reader = new FileReader();
+      reader.onload = e => {
+        item.previewUrl = e.target.result;
+        const img = document.querySelector(`#uitem-${idx} .upload-item-thumb img`);
+        if (!img) { const t = document.querySelector(`#uitem-${idx} .upload-item-thumb`); if(t) t.innerHTML = `<img src="${e.target.result}">`; }
+      };
+      reader.readAsDataURL(item.file);
+    }
+  });
+
+  if (anyPending && uploadQueue.length > 1) {
+    const allBtn = document.createElement('div');
+    allBtn.style.cssText = 'margin-bottom:16px;';
+    allBtn.innerHTML = `<button class="btn-submit" style="width:100%" onclick="uploadAll()">📷 まとめてアップロード（${uploadQueue.filter(i=>i.status==='pending').length}枚）</button>`;
+    wrap.insertBefore(allBtn, wrap.firstChild);
+  }
+}
+
+function removeUploadItem(idx) {
+  uploadQueue.splice(idx, 1);
+  renderUploadItems();
+}
+
+async function uploadOne(idx) {
+  const item = uploadQueue[idx];
+  if (!item.name.trim()) { alert('衣装名を入力してください'); return; }
+  item.status = 'uploading';
+  renderUploadItems();
+  try {
+    const b64 = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(item.file); });
+    const result = await apiPost({ action: 'uploadOutfitImage', b64, filename: item.file.name });
+    if (result.ok) {
+      item.status = 'done';
+      item.url = result.url;
+    } else {
+      item.status = 'error';
+      console.error(result.error);
+    }
+  } catch(e) {
+    item.status = 'error';
+  }
+  renderUploadItems();
+}
+
+async function uploadAll() {
+  const pending = uploadQueue.filter(i => i.status === 'pending');
+  for (const item of pending) {
+    const idx = uploadQueue.indexOf(item);
+    await uploadOne(idx);
+  }
+}
+
+async function registerOne(idx) {
+  const item = uploadQueue[idx];
+  if (!item.url) return;
+  const btn = document.querySelector(`#uitem-${idx} .btn-register`);
+  const result_el = document.getElementById('reg-result-' + idx);
+  if (btn) { btn.disabled = true; btn.textContent = '登録中…'; }
+  try {
+    const id = 'o_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
+    const r = await apiPost({ action: 'registerOutfit', id, name: item.name, category: item.category, imageURL: item.url });
+    if (r.ok) {
+      if (result_el) { result_el.textContent = '✓ outfitsシートに登録しました！'; result_el.className = 'register-result ok show'; }
+      if (btn) btn.style.display = 'none';
+    } else {
+      if (result_el) { result_el.textContent = 'エラー：' + (r.error || ''); result_el.className = 'register-result err show'; }
+      if (btn) { btn.disabled = false; btn.textContent = '📋 outfitsシートに登録する'; }
+    }
+  } catch(e) {
+    if (result_el) { result_el.textContent = '通信エラーが発生しました'; result_el.className = 'register-result err show'; }
+    if (btn) { btn.disabled = false; btn.textContent = '📋 outfitsシートに登録する'; }
   }
 }
 
