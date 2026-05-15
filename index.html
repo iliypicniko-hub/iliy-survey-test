@@ -332,7 +332,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbwjaF7esq-B3yLBYCNJvZHrpRaoC46z6GQ1EQD7Yg2U36QBc-ge9F-sQ8iKvF7o52nW/exec';
+const API='https://script.google.com/macros/s/AKfycbz4z0oKLZepMmAmuaRElTsAKI2XmkVIi6M90rbK4za4fLlf80Gi-YSox_zsfsUwNwM/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -405,7 +405,7 @@ function renderSelector(){
   updateProgressEmpty();
   const m=document.getElementById('form-main');
   m.innerHTML=`<div class="fade-in">
-    <div class="page-heading">オプションの確認</div>
+    <div class="page-heading">オプションの選択</div>
     <div class="page-desc">ご予約のオプションをすべて選択してください。</div>
     <div class="field">
       <label>花束オプション<span class="req">必須</span></label>
@@ -460,39 +460,35 @@ function startSections(){
 // ── 共通情報（最初に表示）──
 function renderCommon(){
   updateProgressEmpty();
-  const allDone=sectionStatus.flower&&sectionStatus.hair&&sectionStatus.outfit;
-  if(allDone){
-    document.getElementById('form-main').innerHTML='<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべての回答が完了しています</h2><p>当日お会いできるのを楽しみにしております。</p></div>';
+  // 全セクション完了チェック（お客様が選んだオプションに基づく）
+  const needsFlower=customer.flowerOption&&customer.flowerOption!=='none';
+  const needsHair=customer.hairOption&&customer.hairOption!=='none';
+  const allDone=(!needsFlower||sectionStatus.flower)&&(!needsHair||sectionStatus.hair)&&sectionStatus.outfit;
+  if(allDone&&(needsFlower||needsHair||sectionStatus.outfit)){
+    document.getElementById('form-main').innerHTML=`<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべての回答が完了しています</h2><p>${(SETTINGS.complete_message||'ご回答ありがとうございます。<br>当日お会いできるのを楽しみにしております。')}</p></div>`;
     return;
   }
   const resume=(sectionStatus.flower||sectionStatus.hair||sectionStatus.outfit)?'<div class="resume-banner">✅ 一部の回答はすでに送信済みです。続きから回答できます。</div>':'';
   document.getElementById('form-main').innerHTML=`<div class="fade-in">
     ${resume}
-    <div class="page-heading">基本情報の入力</div>
-    <div class="page-desc">花束・ヘアメイク・衣装、すべての担当者に共有されます。</div>
+    <div class="page-heading">${customer.name} 様</div>
+    <div class="page-desc">ご予約内容をご確認ください。</div>
     <div class="field">
-      <label>お名前<span class="req">必須</span></label>
-      <input type="text" id="c-name" placeholder="山田 花子" value="${commonData.name||''}">
-      <div class="error-msg" id="err-c-name">お名前を入力してください</div>
+      <label>お名前</label>
+      <div style="padding:11px 13px;background:var(--accent-light);border-radius:8px;font-size:14px;font-weight:500">${customer.name}</div>
     </div>
     <div class="field">
-      <label>撮影日<span class="req">必須</span></label>
-      <input type="date" id="c-date" value="${commonData.shootDate||''}">
-      <div class="error-msg" id="err-c-date">撮影日を選択してください</div>
+      <label>撮影日</label>
+      <div style="padding:11px 13px;background:var(--accent-light);border-radius:8px;font-size:14px;font-weight:500">${fmtD(customer.shootDate)||'未設定'}</div>
     </div>
-    <div class="nav">
-      <button class="btn-next" onclick="goCommon()">次へ　→</button>
-    </div>
+    <div class="nav"><button class="btn-next" onclick="goCommon()">次へ　→</button></div>
   </div>`;
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
 function goCommon(){
-  commonData.name=document.getElementById('c-name')?.value||'';
-  commonData.shootDate=document.getElementById('c-date')?.value||'';
-  let ok=true;
-  if(!commonData.name){document.getElementById('err-c-name')?.classList.add('show');ok=false;}else document.getElementById('err-c-name')?.classList.remove('show');
-  if(!commonData.shootDate){document.getElementById('err-c-date')?.classList.add('show');ok=false;}else document.getElementById('err-c-date')?.classList.remove('show');
-  if(!ok)return;
+  commonData.name=customer.name||'';
+  commonData.shootDate=customer.shootDate||'';
   renderSelector();
 }
 function renderCurrentSection(){
