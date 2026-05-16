@@ -346,7 +346,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbwAj0QnyQY8KLFeFVvRWHOxAURoow0jguGAB5oy1ElyBfRXbuwKbTXR4kwV-q-TC8JW/exec';
+const API='https://script.google.com/macros/s/AKfycbwHfcoCGm9jAyVg8MaYHtVpikjAqvUPN743WOaYXtwmi_X4WEjBrFx1Ih0CItGT478/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -982,12 +982,11 @@ async function initAdmin(){
 }
 function isAllAnswered(c){
   const ss=c.sectionSentStatus||{};
+  if(ss.allNotNeeded)return true;
+  if(c.completed)return true;
   const needsFlower=c.flowerOption&&c.flowerOption!=='none';
   const needsHair=c.hairOption&&c.hairOption!=='none';
-  // completedならisAllAnswered扱い
-  if(c.completed)return true;
-  return(!needsFlower||ss.flower)&&(!needsHair||ss.hair)&&(needsFlower||needsHair?true:false)||
-         (!needsFlower&&!needsHair&&ss.outfit);
+  return(!needsFlower||ss.flower)&&(!needsHair||ss.hair)&&ss.outfit;
 }
 function getAlertDays(){return parseInt(SETTINGS.alert_days||'7',10);}
 function isUrgent(c){
@@ -1068,9 +1067,9 @@ function buildAdminCard(c){
   const needsFlower=c.flowerOption&&c.flowerOption!=='none';
   const needsHair=c.hairOption&&c.hairOption!=='none';
   // お客様がまだオプション選択していない場合（sectionSentStatusが全て空）は全項目「未回答」
-  const noAnswerYet=!ss.flower&&!ss.hair&&!ss.outfit;
+  const noAnswerYet=!ss.flower&&!ss.hair&&!ss.outfit&&!ss.allNotNeeded;
   // 全オプション対象外（花束なし・ヘアメイクなし・衣装も不要）の場合はURL非表示
-  const allNotNeeded=c.completed&&!needsFlower&&!needsHair&&!ss.flower&&!ss.hair&&!ss.outfit;
+  const allNotNeeded=ss.allNotNeeded===true;
   const badge=allNotNeeded?'<span style="display:inline-block;background:#E8E0D5;color:#7A7570;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">全対象外</span>':answered&&!c.completed?'<span class="badge-new">全回答済</span>':c.completed?'':!answered?'<span style="display:inline-block;background:#FEF3E2;color:#A05C00;border:1px solid #F5C26B;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">回答待ち</span>':'';
   const urgentBadge=urgent?'<span class="badge-urgent">⚠️ 期限注意</span>':'';
   const secSt=(sec,label,needed)=>{
