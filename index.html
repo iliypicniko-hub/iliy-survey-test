@@ -271,6 +271,12 @@
   .rte-toolbar button:hover{background:var(--accent-light);border-color:var(--accent);}
   .rte-editor{min-height:120px;padding:12px 14px;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;background:var(--warm-white);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:300;line-height:1.8;outline:none;}
   .rte-editor:focus{border-color:var(--accent);}
+  .option-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:20px;}
+  .option-modal.open{display:flex;}
+  .option-modal-inner{background:var(--warm-white);border-radius:14px;padding:24px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto;}
+  .option-modal-title{font-size:16px;font-weight:500;margin-bottom:14px;}
+  .option-modal-body{font-size:13px;line-height:1.8;color:var(--dark);}
+  .option-modal-close{margin-top:20px;width:100%;padding:11px;background:var(--dark);border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:white;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -326,13 +332,20 @@
   </div>
   <div class="salon-wrap-inner" id="salon-wrap"><div class="loading-box">読み込み中…</div></div>
 </div>
+<div class="option-modal" id="option-modal" onclick="if(event.target===this)closeOptionDetail()">
+  <div class="option-modal-inner">
+    <div class="option-modal-title" id="option-modal-title"></div>
+    <div class="option-modal-body" id="option-modal-body"></div>
+    <button class="option-modal-close" onclick="closeOptionDetail()">閉じる</button>
+  </div>
+</div>
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <span class="lightbox-close">✕</span>
   <img id="lightbox-img" src="">
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbxQs6PwIvGetCgY1WL6SY0NrN7dceirFucKK-w1GB5RxQRAIk2wj9uvNFMyxAD_kttQ/exec';
+const API='https://script.google.com/macros/s/AKfycbye_JSxqChLNM9ZYQGLXLVJ8wT6KDsDzp7ItWf8W2JVhQh4xNvEIm0KUlnSl8idurm8/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -405,24 +418,28 @@ async function initClient(id){
   }
 }
 
-function renderSelector(){
+async function renderSelector(){
+  if(!settingsLoaded)await loadSettings();
   updateProgressEmpty();
   const m=document.getElementById('form-main');
   m.innerHTML=`<div class="fade-in">
     <div class="page-heading">オプションの選択</div>
     <div class="page-desc">ご予約のオプションをすべて選択してください。</div>
     <div class="field">
-      <label>花束オプション<span class="req">必須</span></label>
+      <label>花束オプション<span class="req">必須</span>${SETTINGS.flower_detail?`<button type="button" onclick="showOptionDetail('flower')" style="margin-left:8px;padding:2px 10px;background:var(--flower-light);border:1px solid var(--flower-border);border-radius:10px;font-family:'Noto Sans JP',sans-serif;font-size:10px;color:var(--flower);cursor:pointer;">詳細を見る</button>`:''}
+      </label>
       ${rg('has-flower',['花束を注文している','花束を注文していない'],'col1',sectionStatus.flower)}
       <div class="error-msg" id="err-flower">選択してください</div>
     </div>
     <div class="field">
-      <label>ヘアメイクオプション<span class="req">必須</span></label>
+      <label>ヘアメイクオプション<span class="req">必須</span>${SETTINGS.hair_detail?`<button type="button" onclick="showOptionDetail('hair')" style="margin-left:8px;padding:2px 10px;background:#FBEAF0;border:1px solid #ED93B1;border-radius:10px;font-family:'Noto Sans JP',sans-serif;font-size:10px;color:#993556;cursor:pointer;">詳細を見る</button>`:''}
+      </label>
       ${rg('has-hair',['女性ヘアセット＆メイク','男性ヘアセット','両方（女性＋男性）','ヘアメイクなし'],'col1',sectionStatus.hair)}
       <div class="error-msg" id="err-hair">選択してください</div>
     </div>
     <div class="field">
-      <label>衣装レンタルオプション<span class="req">必須</span></label>
+      <label>衣装レンタルオプション<span class="req">必須</span>${SETTINGS.outfit_detail?`<button type="button" onclick="showOptionDetail('outfit')" style="margin-left:8px;padding:2px 10px;background:var(--prop-light);border:1px solid var(--prop-border);border-radius:10px;font-family:'Noto Sans JP',sans-serif;font-size:10px;color:var(--prop);cursor:pointer;">詳細を見る</button>`:''}
+      </label>
       ${rg('has-outfit',['衣装レンタルを利用する','衣装レンタルは利用しない'],'col1',sectionStatus.outfit)}
       <div class="error-msg" id="err-outfit">選択してください</div>
     </div>
@@ -464,7 +481,9 @@ async function startSections(){
   }
   if(outfit==='衣装レンタルを利用する'&&!sectionStatus.outfit)sectionsToFill.push('outfit');
   if(sectionsToFill.length===0){
-    document.getElementById('form-main').innerHTML='<div class="thankyou"><div class="thankyou-icon">✓</div><h2>回答は不要です</h2><p>当日お会いできるのを楽しみにしております。</p></div>';
+    // 全て不要→GASに完了フラグを立てる（outcomeを送信）
+    try{ await apiPost({action:'submitSection',section:'outfit',cid,name:commonData.name||customer.name,shootDate:commonData.shootDate||customer.shootDate,outfits:[],memo:'全オプション対象外',outfitImages:[],flowerOption:'none',hairOption:'none'}); }catch(e){}
+    document.getElementById('form-main').innerHTML=`<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべて対象外です</h2><p>ご確認ありがとうございます。<br>当日お会いできるのを楽しみにしております。</p></div>`;
     return;
   }
   currentSection=sectionsToFill[0];currentStep=0;renderCurrentSection();
@@ -597,7 +616,7 @@ function buildHairPage(s){
       <div class="field"><label>髪の長さ<span class="req">必須</span></label>${radioGroup('f-hair-length',['ショート','ミディアム（肩あたり）','ロング（肩以下）'],1)}<div class="error-msg" id="err-f-length">選択してください</div></div>
       <div class="field"><label>パーマ<span class="req">必須</span></label>${radioGroup('f-perm',['かけていない','髪全体にかけている','髪の一部にかけている'],1)}<div class="error-msg" id="err-f-perm">選択してください</div></div>
       <div class="field"><label>毛量<span class="req">必須</span></label>${radioGroup('f-hair-volume',['少なめ','普通','多め'],3)}<div class="error-msg" id="err-f-volume">選択してください</div></div>
-      <div class="field"><label>髪質<span class="req">必須</span></label>${radioGroup('f-hair-texture',['硬い','柔らかい','普通'],3)}<div class="error-msg" id="err-f-texture">選択してください</div></div>
+      <div class="field"><label>髪質<span class="req">必須</span></label>${radioGroup('f-hair-texture',['硬い','普通','柔らかい'],3)}<div class="error-msg" id="err-f-texture">選択してください</div></div>
       <div class="nav"><button class="btn-back" onclick="currentStep--;renderHair()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
     case 'h-f-makeup':return`<div class="fade-in">
@@ -624,7 +643,7 @@ function buildHairPage(s){
       <div class="field"><label>髪の長さ<span class="req">必須</span></label>${radioGroup('m-hair-length',['ショート','ミディアム（肩あたり）','ロング（肩以下）'],1)}<div class="error-msg" id="err-m-length">選択してください</div></div>
       <div class="field"><label>パーマ<span class="req">必須</span></label>${radioGroup('m-perm',['かけていない','髪全体にかけている','髪の一部にかけている'],1)}<div class="error-msg" id="err-m-perm">選択してください</div></div>
       <div class="field"><label>毛量<span class="req">必須</span></label>${radioGroup('m-hair-volume',['少なめ','普通','多め'],3)}<div class="error-msg" id="err-m-volume">選択してください</div></div>
-      <div class="field"><label>髪質<span class="req">必須</span></label>${radioGroup('m-hair-texture',['硬い','柔らかい','普通'],3)}<div class="error-msg" id="err-m-texture">選択してください</div></div>
+      <div class="field"><label>髪質<span class="req">必須</span></label>${radioGroup('m-hair-texture',['硬い','普通','柔らかい'],3)}<div class="error-msg" id="err-m-texture">選択してください</div></div>
       <div class="nav"><button class="btn-back" onclick="currentStep--;renderHair()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
     case 'h-m-photo':return`<div class="fade-in">
@@ -768,22 +787,21 @@ function renderOutfitContent(){
 }
 
 function switchCategory(cat){
+  const scrollY=window.scrollY;
   outfitData.memo=document.getElementById('outfit-memo')?.value||outfitData.memo||'';
   selectedCategory=cat;
   renderOutfitContent();
+  requestAnimationFrame(()=>window.scrollTo(0,scrollY));
 }
 
 function toggleOutfit(id){
-  const card=document.getElementById('oc-'+id);
+  const scrollY=window.scrollY;
   const idx=outfitData.selected.indexOf(id);
-  if(idx>=0){
-    outfitData.selected.splice(idx,1);
-  }else{
-    outfitData.selected.push(id);
-  }
-  // re-render to update badges
+  if(idx>=0){outfitData.selected.splice(idx,1);}
+  else{outfitData.selected.push(id);}
   outfitData.memo=document.getElementById('outfit-memo')?.value||outfitData.memo||'';
   renderOutfitContent();
+  requestAnimationFrame(()=>window.scrollTo(0,scrollY));
 }
 
 function confirmOutfit(){
@@ -974,6 +992,7 @@ function showAdminDash(){
       <div class="created-url-box" id="created-url-box">
         <div style="font-size:11px;color:var(--muted);margin-bottom:6px">お客様に送るURL：</div>
         <div class="share-row"><span class="share-url-text" id="created-url-text"></span><button class="btn-copy" onclick="copyText(document.getElementById('created-url-text').textContent,this)">コピー</button></div>
+        <button onclick="resetCreateForm()" style="margin-top:10px;width:100%;padding:9px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;">🔄 新規発行する（このURLを非表示にする）</button>
       </div>
     </div>
     <div class="dashboard">
@@ -982,6 +1001,12 @@ function showAdminDash(){
     </div>`;
 }
 
+function resetCreateForm(){
+  document.getElementById('created-url-box').classList.remove('show');
+  document.getElementById('new-name').value='';
+  document.getElementById('new-date').value='';
+  document.getElementById('created-url-text').textContent='';
+}
 async function createCustomer(){
   const name=document.getElementById('new-name')?.value.trim();
   const shootDate=document.getElementById('new-date')?.value;
@@ -1065,6 +1090,20 @@ function buildAdminCard(c){
   </div>`;
 }
 
+async function resetSection(cid,section,btn){
+  if(!confirm(`「${section==='flower'?'花束':section==='hair'?'ヘアメイク':'衣装'}」の回答をリセットしますか？\nお客様が再回答できるようになります。`))return;
+  btn.disabled=true;btn.textContent='処理中…';
+  try{
+    const r=await adminPost({action:'resetSection',cid,section});
+    if(r.ok){
+      const cx=allCustomers.find(x=>x.id===cid);
+      if(cx&&cx.sectionSentStatus)cx.sectionSentStatus[section]=false;
+      alert('リセットしました。お客様に再回答URLを送ってください。');
+      // カードを再描画
+      showAdminList(cx?.completed?'done':'pending');
+    }else{alert('リセットに失敗しました：'+(r.error||''));}
+  }catch(e){alert('エラーが発生しました。');}
+}
 async function copyUrlAndMark(url,cid,section,btn){
   await navigator.clipboard.writeText(url);
   btn.textContent='コピー完了!';btn.classList.add('copied');
@@ -1167,9 +1206,17 @@ async function loadDetail(id){
           </div>`).join('')}</div>`;
       }
     }
+    // リセットボタン追加
+    h+=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">回答の修正が必要な場合はリセットしてお客様に再回答してもらえます。</div>
+      <div style="display:flex;gap:8px;">
+        ${d.flower?`<button onclick="resetSection('${id}','flower',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">🌷 花束をリセット</button>`:''}
+        ${d.hair?`<button onclick="resetSection('${id}','hair',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">💄 ヘアをリセット</button>`:''}
+        ${d.outfit?`<button onclick="resetSection('${id}','outfit',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">👗 衣装をリセット</button>`:''}
+      </div>
+    </div>`;
     w.innerHTML=h||'<p style="font-size:12px;color:var(--muted)">回答なし</p>';
     btn.style.display='none';
-    // 遅延読み込み開始
     lazyLoadImages(w);
   }catch(e){btn.textContent='読み込み失敗。再試行';btn.disabled=false;}
 }
@@ -1228,11 +1275,19 @@ async function initSalon(id,section){
     const hasHairData=d.hair!==null;
     const hasOutfitData=d.outfit!==null;
     const relevantHasData=(section==='flower'&&hasFlowerData)||(section==='hair'&&hasHairData)||(section==='outfit'&&hasOutfitData)||(!section&&(hasFlowerData||hasHairData||hasOutfitData));
+    // セクションが対象外かどうかをoption情報から判定
+    const flowerOpt=c?.flowerOption||'none';
+    const hairOpt=c?.hairOption||'none';
+    const isOutOfScope=(section==='flower'&&flowerOpt==='none'&&(d.flower===null))||
+                       (section==='hair'&&hairOpt==='none'&&(d.hair===null));
     if(!relevantHasData){
+      const msg=isOutOfScope
+        ?{icon:'➖',title:'対象外のオプションです',sub:'このお客様はこのオプションを選択されていません。'}
+        :{icon:'⏳',title:'まだ回答されていません',sub:'お客様の回答後にこちらに表示されます。'};
       body+=`<div style="background:#FEF3E2;border:1px solid #F5C26B;border-radius:10px;padding:20px;text-align:center;margin:20px 0;">
-        <div style="font-size:24px;margin-bottom:10px;">⏳</div>
-        <div style="font-size:15px;font-weight:500;margin-bottom:8px;">まだ回答されていません</div>
-        <div style="font-size:13px;color:var(--muted)">お客様の回答後にこちらに表示されます。</div>
+        <div style="font-size:24px;margin-bottom:10px;">${msg.icon}</div>
+        <div style="font-size:15px;font-weight:500;margin-bottom:8px;">${msg.title}</div>
+        <div style="font-size:13px;color:var(--muted)">${msg.sub}</div>
       </div>`;
     }
     if((!section||section==='flower')&&d.flower){
@@ -1332,6 +1387,9 @@ async function loadSettingsTab() {
       { key:'hair_notice', label:'💄 ヘアメイク 注意書き', colorKey:'hair_notice_color', default:'🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。<br><br>🔶 メイクアイテムのお持ち込みは自由です。敏感肌の方は普段使用のアイテムをお持ち込みください。<br><br>＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。' },
       { key:'outfit_notice', label:'👗 衣装レンタル 注意書き', colorKey:'outfit_notice_color', default:'プラン内ではメインで撮影される方の<strong>1コーデ分のみ無料</strong>でレンタルできます（例：トップス1着＋パンツ1着）。<br>別でもう1コーデ追加されたい場合は、別途 <strong>¥3,300</strong> となります。' },
       { key:'complete_message', label:'✅ 回答完了メッセージ', colorKey:null, default:'ご回答ありがとうございます。<br>内容はスタジオが確認し、担当者に共有いたします。<br><br>当日お会いできるのを楽しみにしております。' },
+      { key:'flower_detail', label:'🌷 花束オプション 詳細説明（任意）', colorKey:null, default:'' },
+      { key:'hair_detail', label:'💄 ヘアメイクオプション 詳細説明（任意）', colorKey:null, default:'' },
+      { key:'outfit_detail', label:'👗 衣装レンタルオプション 詳細説明（任意）', colorKey:null, default:'' },
     ];
 
     wrap.innerHTML = `
@@ -1597,6 +1655,14 @@ async function registerOne(idx) {
 }
 
 // utils
+function showOptionDetail(type){
+  const titles={flower:'🌷 花束オプション詳細',hair:'💄 ヘアメイクオプション詳細',outfit:'👗 衣装レンタルオプション詳細'};
+  const keys={flower:'flower_detail',hair:'hair_detail',outfit:'outfit_detail'};
+  document.getElementById('option-modal-title').textContent=titles[type]||'';
+  document.getElementById('option-modal-body').innerHTML=SETTINGS[keys[type]]||'';
+  document.getElementById('option-modal').classList.add('open');
+}
+function closeOptionDetail(){document.getElementById('option-modal').classList.remove('open');}
 function noticeStyle(colorName) {
   const map = {
     cream:  'background:#F0E6D8;border-left-color:#C4956A;',
