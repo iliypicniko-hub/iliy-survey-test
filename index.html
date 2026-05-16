@@ -1070,7 +1070,7 @@ function buildAdminCard(c){
   // お客様がまだオプション選択していない場合（sectionSentStatusが全て空）は全項目「未回答」
   const noAnswerYet=!ss.flower&&!ss.hair&&!ss.outfit;
   // 全オプション対象外（花束なし・ヘアメイクなし・衣装も不要）の場合はURL非表示
-  const allNotNeeded=!needsFlower&&!needsHair&&!noAnswerYet&&(ss.flower||ss.hair)&&!ss.outfit;
+  const allNotNeeded=!needsFlower&&!needsHair&&!noAnswerYet&&!ss.outfit&&(ss.flower||ss.hair||c.flowerOption==='none');
   const badge=allNotNeeded?'<span style="display:inline-block;background:#E8E0D5;color:#7A7570;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">全対象外</span>':answered&&!c.completed?'<span class="badge-new">全回答済</span>':!answered?'<span style="display:inline-block;background:#FEF3E2;color:#A05C00;border:1px solid #F5C26B;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">回答待ち</span>':'';
   const urgentBadge=urgent?'<span class="badge-urgent">⚠️ 期限注意</span>':'';
   const secSt=(sec,label,needed)=>{
@@ -1088,11 +1088,11 @@ function buildAdminCard(c){
       <div style="margin-bottom:14px">
         ${secSt('flower','🌷 花束',needsFlower)}
         ${secSt('hair','💄 ヘアメイク',needsHair)}
-        ${secSt('outfit','👗 衣装レンタル',true)}
+        ${secSt('outfit','👗 衣装レンタル',noAnswerYet||ss.outfit)}
       </div>
-      ${(!allNotNeeded&&(noAnswerYet||needsFlower||needsHair))?`<div class="section-urls">
+      ${(!allNotNeeded&&(noAnswerYet||needsFlower||needsHair||ss.outfit))?`<div class="section-urls">
         <div class="section-urls-title">担当者への共有URL</div>
-        ${(noAnswerYet?['flower','hair','outfit']:[needsFlower?'flower':null,needsHair?'hair':null,'outfit'].filter(Boolean)).map(sec=>{
+        ${(noAnswerYet?['flower','hair','outfit']:[needsFlower?'flower':null,needsHair?'hair':null,ss.outfit?'outfit':null].filter(Boolean)).map(sec=>{
           const lb={flower:'🌷 花束担当者',hair:'💄 ヘアメイク担当者',outfit:'👗 衣装担当者'};
           const url=`${base}?sid=${c.id}&section=${sec}`;
           const wasCopied=copied[sec];
