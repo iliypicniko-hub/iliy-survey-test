@@ -332,7 +332,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbypJmvCaHpt_36sGnak9T7-hfmqfqa6CBlJySel1TfCgcZ7ajbjxAUmV6rMW2lXpqzk/exec';
+const API='https://script.google.com/macros/s/AKfycbzzfrb8uqwPa2lCd94UE3e-uD_2ymfnYk_HFsg9yGM3LDMRNxBOEs3Zd1vK3ZbpkeaJ/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -541,7 +541,7 @@ async function renderFlower(){
     <div class="page-heading">内容の確認</div>
     <div class="confirm-block"><div class="confirm-block-title flower">花束ご要望</div>
       <div class="confirm-row"><div class="confirm-key">お名前</div><div class="confirm-val">${commonData.name}</div></div>
-      <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${commonData.shootDate}</div></div>
+      <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${fmtD(commonData.shootDate)}</div></div>
       <div class="confirm-row"><div class="confirm-key">雰囲気</div><div class="confirm-val">${flowerData.mood||''}</div></div>
       ${flowerData.note?`<div class="confirm-row"><div class="confirm-key">補足</div><div class="confirm-val">${flowerData.note}</div></div>`:''}
       <div class="confirm-row"><div class="confirm-key">普段の写真</div><div class="confirm-val">${PS['fl-person'].length}枚</div></div>
@@ -637,7 +637,7 @@ function buildHairPage(s){
         <div class="confirm-block"><div class="confirm-block-title">基本情報</div>
           <div class="confirm-row"><div class="confirm-key">${hairOptionType==='both'?'女性のお名前':'お名前'}</div><div class="confirm-val">${commonData.name}</div></div>
           ${hairOptionType==='both'?`<div class="confirm-row"><div class="confirm-key">男性のお名前</div><div class="confirm-val">${commonData.nameMale||''}</div></div>`:''}
-          <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${commonData.shootDate}</div></div>
+          <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${fmtD(commonData.shootDate)}</div></div>
         </div>`;
       if(isFemale)h+=`<div class="confirm-block"><div class="confirm-block-title">女性ヘア・メイク</div>
         <div class="confirm-row"><div class="confirm-key">髪の長さ</div><div class="confirm-val">${fd.fHairLength||''}</div></div>
@@ -785,13 +785,15 @@ function toggleOutfit(id){
 function confirmOutfit(){
   outfitData.memo=document.getElementById('outfit-memo')?.value||'';
   const selectedNames=outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?o.name:''}).filter(Boolean);
+  const selectedImgs=outfitData.selected.map(id=>{const o=OUTFITS.find(x=>x.id===id);return o&&o.img?{name:o.name,img:o.img}:null}).filter(Boolean);
   document.getElementById('form-main').innerHTML=`<div class="fade-in">
     <div class="section-badge outfit">👗 衣装レンタル</div>
     <div class="page-heading">内容の確認</div>
     <div class="confirm-block"><div class="confirm-block-title outfit">選択した衣装</div>
       <div class="confirm-row"><div class="confirm-key">お名前</div><div class="confirm-val">${commonData.name}</div></div>
-      <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${commonData.shootDate}</div></div>
+      <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${fmtD(commonData.shootDate)}</div></div>
       <div class="confirm-row"><div class="confirm-key">選択衣装（${outfitData.selected.length}着）</div><div class="confirm-val">${selectedNames.join('、')||'なし'}</div></div>
+      ${selectedImgs.length>0?`<div class="confirm-row"><div class="confirm-key">衣装画像</div><div class="confirm-val"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${selectedImgs.map(o=>`<div style="text-align:center"><img src="${o.img}" style="width:80px;height:106px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" onerror="this.style.display='none'"><div style="font-size:10px;color:var(--muted);margin-top:2px">${o.name}</div></div>`).join('')}</div></div></div>`:''}
       ${outfitData.memo?`<div class="confirm-row"><div class="confirm-key">補足メモ</div><div class="confirm-val">${outfitData.memo}</div></div>`:''}
     </div>
     <div class="nav"><button class="btn-back" onclick="renderOutfitContent()">← 戻る</button><button class="btn-submit" id="btn-submit" onclick="submitSection('outfit')">送信する</button></div>
@@ -805,7 +807,26 @@ async function submitSection(section){
   if(btn)btn.disabled=true;
   document.getElementById('sending-overlay').classList.add('show');
   try{
-    const readFile=f=>new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);});
+    // 画像を圧縮してからbase64に変換（最大1200px、JPEG品質0.75）
+    const readFile=f=>new Promise(res=>{
+      const img=new Image();
+      const url=URL.createObjectURL(f);
+      img.onload=()=>{
+        const MAX=1200;
+        let w=img.width,h=img.height;
+        if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        URL.revokeObjectURL(url);
+        res(canvas.toDataURL('image/jpeg',0.75));
+      };
+      img.onerror=()=>{
+        // 圧縮失敗時は元ファイルをそのまま使う
+        const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);
+      };
+      img.src=url;
+    });
     const toB64=async key=>Promise.all(PS[key].map(readFile));
     let payload={action:'submitSection',section,cid,name:commonData.name,nameMale:commonData.nameMale,shootDate:commonData.shootDate,flowerOption:customer.flowerOption,hairOption:customer.hairOption};
     if(section==='flower'){
@@ -818,7 +839,8 @@ async function submitSection(section){
     }
     if(section==='outfit'){
       const selectedNames=outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?o.name:''}).filter(Boolean);
-      Object.assign(payload,{outfits:selectedNames,memo:outfitData.memo});
+      const outfitImgUrls=outfitData.selected.map(id=>{const o=OUTFITS.find(x=>x.id===id);return o&&o.img?o.img:null}).filter(Boolean);
+      Object.assign(payload,{outfits:selectedNames,outfitImages:outfitImgUrls,memo:outfitData.memo});
     }
     const result=await apiPost(payload);
     document.getElementById('sending-overlay').classList.remove('show');
@@ -1112,9 +1134,17 @@ async function loadDetail(id){
     if(d.outfit){
       h+=`<div class="admin-sec-title outfit">👗 衣装レンタル</div>
         <div class="admin-grid">
-          <div><div class="admin-fl">選択衣装</div>${(d.outfit.outfits||[]).join('　/　')||'なし'}</div>
+          <div><div class="admin-fl">選択衣装</div>${(d.outfit.outfits||[]).join('、')||'なし'}</div>
           ${d.outfit.memo?`<div><div class="admin-fl">補足</div>${d.outfit.memo}</div>`:''}
         </div>`;
+      if(d.outfit.outfitImages&&d.outfit.outfitImages.length>0){
+        h+=`<div style="font-size:11px;color:var(--muted);margin:8px 0 4px">選択衣装の画像（${d.outfit.outfitImages.length}枚）</div>
+          <div class="photo-row">${d.outfit.outfitImages.map(u=>`<div class="photo-thumb-sm" onclick="openLightbox('${u}')" style="cursor:pointer;">
+            <img data-src="${u}" src="" loading="lazy" referrerpolicy="no-referrer"
+              style="width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s;"
+              onload="this.style.opacity=1" onerror="this.parentElement.style.display='none'">
+          </div>`).join('')}</div>`;
+      }
     }
     w.innerHTML=h||'<p style="font-size:12px;color:var(--muted)">回答なし</p>';
     btn.style.display='none';
@@ -1172,6 +1202,18 @@ async function initSalon(id,section){
     let body=`<div class="salon-section"><div class="salon-sec-title common">基本情報</div><div class="salon-grid">
       <div><div class="salon-fl">お客様名</div><div class="salon-fv">${c?.name||''} 様</div></div>
     </div></div>`;
+    // 未回答チェック
+    const hasFlowerData=d.flower!==null;
+    const hasHairData=d.hair!==null;
+    const hasOutfitData=d.outfit!==null;
+    const relevantHasData=(section==='flower'&&hasFlowerData)||(section==='hair'&&hasHairData)||(section==='outfit'&&hasOutfitData)||(!section&&(hasFlowerData||hasHairData||hasOutfitData));
+    if(!relevantHasData){
+      body+=`<div style="background:#FEF3E2;border:1px solid #F5C26B;border-radius:10px;padding:20px;text-align:center;margin:20px 0;">
+        <div style="font-size:24px;margin-bottom:10px;">⏳</div>
+        <div style="font-size:15px;font-weight:500;margin-bottom:8px;">まだ回答されていません</div>
+        <div style="font-size:13px;color:var(--muted)">お客様の回答後にこちらに表示されます。</div>
+      </div>`;
+    }
     if((!section||section==='flower')&&d.flower){
       body+=`<div class="salon-section"><div class="salon-sec-title flower">🌷 花束ご要望</div><div class="salon-grid">
         <div><div class="salon-fl">お名前</div><div class="salon-fv">${d.flower.name||''}</div></div>
@@ -1219,8 +1261,11 @@ async function initSalon(id,section){
       body+=`<div class="salon-section"><div class="salon-sec-title outfit">👗 衣装レンタル</div><div class="salon-grid">
         <div><div class="salon-fl">お名前</div><div class="salon-fv">${d.outfit.name||''}</div></div>
         <div><div class="salon-fl">撮影日</div><div class="salon-fv">${fmtD(d.outfit.shootDate)}</div></div>
-        <div style="grid-column:1/-1"><div class="salon-fl">選択衣装</div><div class="salon-fv">${(d.outfit.outfits||[]).join('　/　')||'なし'}</div></div>
+        <div style="grid-column:1/-1"><div class="salon-fl">選択衣装</div><div class="salon-fv">${(d.outfit.outfits||[]).join('、')||'なし'}</div></div>
         ${d.outfit.memo?`<div style="grid-column:1/-1"><div class="salon-fl">補足メモ</div><div class="salon-fv">${d.outfit.memo}</div></div>`:''}
+      </div>
+      ${d.outfit.outfitImages&&d.outfit.outfitImages.length>0?`
+        <div class="salon-photos" style="margin-top:10px">${d.outfit.outfitImages.map(u=>`<div class="salon-photo" onclick="openLightbox('${u}')"><img src="${u}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'"></div>`).join('')}</div>`:''}
       </div></div>`;
     }
     document.getElementById('salon-wrap').innerHTML=`<div class="salon-card">
