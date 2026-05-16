@@ -71,7 +71,12 @@
   .outfit-card.selected{border-color:var(--prop);box-shadow:0 0 0 2px var(--prop-light);}
   .outfit-img-wrap{aspect-ratio:3/4;background:#f0f0ec;display:flex;align-items:center;justify-content:center;overflow:hidden;}
   .outfit-img-wrap img{width:100%;height:100%;object-fit:cover;}
-  .outfit-label-text{padding:8px 10px;font-size:11px;color:var(--dark);background:var(--warm-white);text-align:center;line-height:1.4;}
+  /* Slider fixes for mobile */
+  .outfit-slider{position:relative;overflow:hidden;aspect-ratio:3/4;background:#f0f0ec;width:100%;}
+  .outfit-slides{display:flex;height:100%;transition:transform .3s ease;will-change:transform;}
+  .outfit-slide{min-width:100%;width:100%;height:100%;flex-shrink:0;overflow:hidden;}
+  .outfit-slide img{width:100%;height:100%;object-fit:cover;display:block;}
+  .outfit-label-text{padding:6px 8px;font-size:11px;color:var(--dark);background:var(--warm-white);text-align:center;line-height:1.4;word-break:break-all;}
   .outfit-check{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:2px solid white;background:transparent;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;transition:all .2s;}
   .outfit-card.selected .outfit-check{background:var(--prop);border-color:var(--prop);}
   .outfit-count-badge{position:absolute;top:6px;left:6px;width:20px;height:20px;border-radius:50%;background:var(--prop);color:white;font-size:10px;font-weight:500;display:none;align-items:center;justify-content:center;}
@@ -277,6 +282,11 @@
   .option-modal-title{font-size:16px;font-weight:500;margin-bottom:14px;}
   .option-modal-body{font-size:13px;line-height:1.8;color:var(--dark);}
   .option-modal-close{margin-top:20px;width:100%;padding:11px;background:var(--dark);border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:white;cursor:pointer;}
+  @media(max-width:400px){
+    .outfit-grid{gap:7px;}
+    .outfit-label-text{font-size:10px;padding:5px 6px;}
+    .slider-btn{width:22px;height:22px;font-size:11px;}
+  }
   /* OUTFIT SLIDER */
   .outfit-slider{position:relative;overflow:hidden;aspect-ratio:3/4;background:#f0f0ec;}
   .outfit-slides{display:flex;transition:transform .3s ease;height:100%;}
@@ -772,12 +782,12 @@ function renderOutfitContent(){
         :`<div class="outfit-grid">${filtered.map(o=>`
           <div class="outfit-card${outfitData.selected.includes(o.id)?' selected':''}" id="oc-${o.id}" onclick="toggleOutfit('${o.id}')">
             <div class="outfit-slider" id="slider-${o.id}" style="aspect-ratio:3/4;position:relative;overflow:hidden;background:#f0f0ec;">
-              <div class="outfit-slides" id="slides-${o.id}" style="display:flex;height:100%;transition:transform .3s ease;">
+              <div class="outfit-slides" id="slides-${o.id}">
                 ${[o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])]
                   .filter(Boolean)
-                  .map(img=>`<div style="min-width:100%;height:100%;flex-shrink:0;"><img src="${img}" alt="${o.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"></div>`)
+                  .map(img=>`<div class="outfit-slide"><img src="${img}" alt="${o.name}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`)
                   .join('')}
-                ${!o.img?`<div style="min-width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)">画像なし</div>`:''}
+                ${!o.img?`<div class="outfit-slide" style="display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)">画像なし</div>`:''}
               </div>
               ${(()=>{const imgs=[o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])].filter(Boolean);return imgs.length>1?`
                 <button class="slider-btn prev" onclick="event.stopPropagation();slideOutfit('${o.id}',-1,${JSON.stringify([o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])].filter(Boolean)).length})">‹</button>
@@ -1741,7 +1751,7 @@ async function registerOne(idx) {
   if (btn) { btn.disabled = true; btn.textContent = '登録中…'; }
   try {
     const id = 'o_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
-    const r = await adminPost({ action: 'registerOutfit', id, name: item.name, category: item.category, imageURL: item.url });
+    const r = await adminPost({ action: 'registerOutfit', id, name: item.name, category: item.category, imageURL: item.url, note: item.note||'', imgs: item.imgs||'' });
     if (r.ok) {
       if (result_el) { result_el.textContent = '✓ outfitsシートに登録しました！'; result_el.className = 'register-result ok show'; }
       if (btn) btn.style.display = 'none';
