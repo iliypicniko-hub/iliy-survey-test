@@ -15,7 +15,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--cream);color:var(--dark);font-family:'Noto Sans JP',sans-serif;font-weight:300;min-height:100vh;}
-  .header{background:var(--warm-white);border-bottom:1px solid var(--border);padding:18px 24px;text-align:center;}
+  .header{background:var(--warm-white);border-bottom:1px solid var(--border);padding:18px 24px;text-align:center;position:relative;}
   .header-title{font-size:18px;font-weight:500;letter-spacing:.08em;}
   .header-sub{font-size:11px;color:var(--muted);margin-top:4px;}
   .progress-wrap{background:var(--warm-white);padding:14px 24px 0;border-bottom:1px solid var(--border);}
@@ -296,6 +296,7 @@
   <div class="header">
     <div class="header-title">管理画面</div>
     <div class="header-sub" id="admin-sub">読み込み中…</div>
+    <button onclick="reloadAdmin()" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;">🔄 更新</button>
   </div>
   <div class="admin-tabs">
     <button class="admin-tab active" id="tab-customers" onclick="switchAdminTab('customers')">📋 回答一覧</button>
@@ -345,7 +346,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbye_JSxqChLNM9ZYQGLXLVJ8wT6KDsDzp7ItWf8W2JVhQh4xNvEIm0KUlnSl8idurm8/exec';
+const API='https://script.google.com/macros/s/AKfycbxvFpA9cDxtRnEeSiu9FPNDZoLz5hfhYRIh-WHuVOm5HR5fBvLN9NDeSxnqifrvA8M6/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -481,9 +482,9 @@ async function startSections(){
   }
   if(outfit==='衣装レンタルを利用する'&&!sectionStatus.outfit)sectionsToFill.push('outfit');
   if(sectionsToFill.length===0){
-    // 全て不要→GASに完了フラグを立てる（outcomeを送信）
-    try{ await apiPost({action:'submitSection',section:'outfit',cid,name:commonData.name||customer.name,shootDate:commonData.shootDate||customer.shootDate,outfits:[],memo:'全オプション対象外',outfitImages:[],flowerOption:'none',hairOption:'none'}); }catch(e){}
-    document.getElementById('form-main').innerHTML=`<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべて対象外です</h2><p>ご確認ありがとうございます。<br>当日お会いできるのを楽しみにしております。</p></div>`;
+    // 全て不要→GASに専用の全対象外アクションを送信
+    try{ await apiPost({action:'markAllNotNeeded',cid}); }catch(e){}
+    document.getElementById('form-main').innerHTML=`<div class="thankyou"><div class="thankyou-icon">✓</div><h2>ご回答ありがとうございます</h2><p>今回はオプションのご利用はないことを確認しました。<br><br>当日お会いできるのを楽しみにしております。</p></div>`;
     return;
   }
   currentSection=sectionsToFill[0];currentStep=0;renderCurrentSection();
@@ -927,6 +928,19 @@ function removePhoto(key,i){PS[key].splice(i,1);renderPreviews(key);}
 
 // ══ ADMIN ══
 let allCustomers=[];
+async function reloadAdmin(){
+  // パスワード再入力なしでリロード
+  if(!adminPassword){await initAdmin();return;}
+  document.getElementById('admin-wrap').innerHTML='<div class="loading-box">更新中…</div>';
+  try{
+    const[custResult]=await Promise.all([adminGet({action:'getAllCustomers'}),loadSettings()]);
+    if(!custResult.ok)throw new Error(custResult.error);
+    allCustomers=custResult.data.reverse();
+    showAdminDash();
+  }catch(e){
+    document.getElementById('admin-wrap').innerHTML='<p style="text-align:center;padding:40px 0;color:var(--error);font-size:14px">更新に失敗しました。</p>';
+  }
+}
 async function initAdmin(){
   // パスワード入力
   const pw=prompt('管理者パスワードを入力してください');
@@ -1018,8 +1032,6 @@ async function createCustomer(){
     const url=location.origin+location.pathname+'?cid='+r.cid;
     document.getElementById('created-url-text').textContent=url;
     document.getElementById('created-url-box').classList.add('show');
-    document.getElementById('new-name').value='';
-    document.getElementById('new-date').value='';
     allCustomers.unshift({id:r.cid,name,shootDate,flowerOption:'none',hairOption:'none',sectionSentStatus:{},completed:false,copiedSections:{},createdAt:new Date().toString()});
     document.getElementById('admin-sub').textContent='全'+allCustomers.length+'件';
   }catch(e){alert('URL発行に失敗しました。');}
@@ -1208,12 +1220,14 @@ async function loadDetail(id){
     }
     // リセットボタン追加
     h+=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">回答の修正が必要な場合はリセットしてお客様に再回答してもらえます。</div>
-      <div style="display:flex;gap:8px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">回答をリセットするとお客様が再回答できます。</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
         ${d.flower?`<button onclick="resetSection('${id}','flower',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">🌷 花束をリセット</button>`:''}
         ${d.hair?`<button onclick="resetSection('${id}','hair',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">💄 ヘアをリセット</button>`:''}
         ${d.outfit?`<button onclick="resetSection('${id}','outfit',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">👗 衣装をリセット</button>`:''}
       </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;margin-bottom:6px;">管理者が直接編集する場合（花束の雰囲気・衣装メモなど）：</div>
+      <a href="https://docs.google.com/spreadsheets/d/${getSpreadsheetId()}" target="_blank" style="display:inline-block;padding:8px 14px;background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--accent);text-decoration:none;">📊 スプレッドシートで直接編集</a>
     </div>`;
     w.innerHTML=h||'<p style="font-size:12px;color:var(--muted)">回答なし</p>';
     btn.style.display='none';
@@ -1663,6 +1677,10 @@ function showOptionDetail(type){
   document.getElementById('option-modal').classList.add('open');
 }
 function closeOptionDetail(){document.getElementById('option-modal').classList.remove('open');}
+function getSpreadsheetId(){
+  // GASのスプレッドシートIDをURLから取得（管理者向けリンク用）
+  return '';// GASから返ってくるようにするか、直接URLを埋め込む
+}
 function noticeStyle(colorName) {
   const map = {
     cream:  'background:#F0E6D8;border-left-color:#C4956A;',
