@@ -332,7 +332,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbzVoZ9PiZnfLVpgxX0IOUrcBnjHwsk3zfUakueiYPmlr0IIFJDTLscsU6BXpnRWz7s/exec';
+const API='https://script.google.com/macros/s/AKfycbypJmvCaHpt_36sGnak9T7-hfmqfqa6CBlJySel1TfCgcZ7ajbjxAUmV6rMW2lXpqzk/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -432,7 +432,6 @@ function rg(name,opts,col,locked){
     opts.map(o=>`<label class="choice-card"><input type="radio" name="${name}" value="${o}"${locked?' disabled':''}><div class="choice-label"><div class="choice-dot"></div>${o}</div></label>`).join('')+'</div>';
 }
 
-// ★ 修正: オプション選択を即座にGASに保存してから次へ進む
 async function startSections(){
   const flower=document.querySelector('input[name="has-flower"]:checked')?.value;
   const hair=document.querySelector('input[name="has-hair"]:checked')?.value;
@@ -444,22 +443,14 @@ async function startSections(){
   if(!hair&&!sectionStatus.hair)show('err-hair');else hide('err-hair');
   if(!outfit&&!sectionStatus.outfit)show('err-outfit');else hide('err-outfit');
   if(!ok)return;
-
-  // ★ オプション内容をGASのcustomersシートに即保存
-  const flowerOpt = flower==='花束を注文している' ? 'flower' : 'none';
-  const hairOpt   = hair==='女性ヘアセット＆メイク' ? 'female'
-                  : hair==='男性ヘアセット'          ? 'male'
-                  : hair==='両方（女性＋男性）'       ? 'both'
-                  : 'none';
-  // 非同期で保存（エラーでも先に進む）
+  // オプション内容をGASのcustomersシートに保存
+  const flowerOpt=flower==='花束を注文している'?'flower':'none';
+  const hairOpt=hair==='女性ヘアセット＆メイク'?'female':hair==='男性ヘアセット'?'male':hair==='両方（女性＋男性）'?'both':'none';
   try{
-    await apiPost({action:'updateOptions', cid, flowerOption:flowerOpt, hairOption:hairOpt});
-    // ローカルのcustomerオブジェクトも更新しておく
-    customer.flowerOption = flowerOpt;
-    customer.hairOption   = hairOpt;
-  }catch(e){
-    console.warn('updateOptions failed:', e);
-  }
+    await apiPost({action:'updateOptions',cid,flowerOption:flowerOpt,hairOption:hairOpt});
+    customer.flowerOption=flowerOpt;
+    customer.hairOption=hairOpt;
+  }catch(e){console.warn('updateOptions failed:',e);}
 
   sectionsToFill=[];
   if(flower==='花束を注文している'&&!sectionStatus.flower)sectionsToFill.push('flower');
@@ -478,6 +469,7 @@ async function startSections(){
 // ── 共通情報（最初に表示）──
 function renderCommon(){
   updateProgressEmpty();
+  // 全セクション完了チェック（お客様が選んだオプションに基づく）
   const needsFlower=customer.flowerOption&&customer.flowerOption!=='none';
   const needsHair=customer.hairOption&&customer.hairOption!=='none';
   const allDone=(!needsFlower||sectionStatus.flower)&&(!needsHair||sectionStatus.hair)&&sectionStatus.outfit;
@@ -778,12 +770,14 @@ function switchCategory(cat){
 }
 
 function toggleOutfit(id){
+  const card=document.getElementById('oc-'+id);
   const idx=outfitData.selected.indexOf(id);
   if(idx>=0){
     outfitData.selected.splice(idx,1);
   }else{
     outfitData.selected.push(id);
   }
+  // re-render to update badges
   outfitData.memo=document.getElementById('outfit-memo')?.value||outfitData.memo||'';
   renderOutfitContent();
 }
@@ -951,7 +945,7 @@ async function createCustomer(){
   if(!name){alert('お客様名を入力してください');return;}
   if(!shootDate){alert('撮影日を入力してください');return;}
   try{
-    const r=await apiPost({action:'createCustomer',name,shootDate});
+    const r=await apiPost({action:'createCustomer',name,shootDate,flowerOption:'none',hairOption:'none'});
     if(!r.ok)throw new Error(r.error);
     const url=location.origin+location.pathname+'?cid='+r.cid;
     document.getElementById('created-url-text').textContent=url;
@@ -981,8 +975,11 @@ function buildAdminCard(c){
   const needsHair=c.hairOption&&c.hairOption!=='none';
   const badge=answered&&!c.completed?'<span class="badge-new">全回答済</span>':!answered?'<span style="display:inline-block;background:#FEF3E2;color:#A05C00;border:1px solid #F5C26B;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">回答待ち</span>':'';
   const urgentBadge=urgent?'<span class="badge-urgent">⚠️ 期限注意</span>':'';
+  // お客様がまだオプション選択していない場合（sectionSentStatusが全て空）は全項目「未回答」
+  const noAnswerYet=!ss.flower&&!ss.hair&&!ss.outfit;
   const secSt=(sec,label,needed)=>{
-    if(!needed)return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px;color:var(--muted)">${label}</span><span style="font-size:10px;color:var(--muted)">対象外</span></div>`;
+    // オプション未選択の場合は全部「未回答」表示
+    if(!needed&&!noAnswerYet)return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px;color:var(--muted)">${label}</span><span style="font-size:10px;color:var(--muted)">対象外</span></div>`;
     return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px">${label}</span><span class="sec-status ${ss[sec]?'ok':'ng'}">${ss[sec]?'回答済み':'未回答'}</span></div>`;
   };
   return`<div class="admin-card${urgent?' urgent':''}" id="card-${c.id}">
@@ -998,7 +995,7 @@ function buildAdminCard(c){
       </div>
       <div class="section-urls">
         <div class="section-urls-title">担当者への共有URL</div>
-        ${[needsFlower?'flower':null,needsHair?'hair':null,'outfit'].filter(Boolean).map(sec=>{
+        ${(noAnswerYet?['flower','hair','outfit']:[needsFlower?'flower':null,needsHair?'hair':null,'outfit'].filter(Boolean)).map(sec=>{
           const lb={flower:'🌷 花束担当者',hair:'💄 ヘアメイク担当者',outfit:'👗 衣装担当者'};
           const url=`${base}?sid=${c.id}&section=${sec}`;
           const wasCopied=copied[sec];
@@ -1046,7 +1043,18 @@ async function deleteCustomer(id){
   if(!confirm('このお客様のデータを完全に削除しますか？\nこの操作は取り消せません。'))return;
   try{
     const r=await apiPost({action:'deleteCustomer',cid:id});
-    if(r.ok){allCustomers=allCustomers.filter(x=>x.id!==id);showAdminDash();}
+    if(r.ok){
+      allCustomers=allCustomers.filter(x=>x.id!==id);
+      const card=document.getElementById('card-'+id);
+      if(card){
+        card.style.opacity='0';card.style.transition='opacity .3s';
+        setTimeout(()=>{
+          card.remove();
+          document.getElementById('admin-sub').textContent='全'+allCustomers.length+'件';
+          if(!document.querySelector('.admin-card'))showAdminDash();
+        },300);
+      }else{showAdminDash();}
+    }
   }catch(e){alert('削除に失敗しました。');}
 }
 async function loadDetail(id){
@@ -1110,13 +1118,42 @@ async function loadDetail(id){
     }
     w.innerHTML=h||'<p style="font-size:12px;color:var(--muted)">回答なし</p>';
     btn.style.display='none';
+    // 遅延読み込み開始
+    lazyLoadImages(w);
   }catch(e){btn.textContent='読み込み失敗。再試行';btn.disabled=false;}
 }
 
 function photoRow(label,imgs){
   if(!imgs||imgs.length===0)return'';
+  // data-src で遅延読み込み、クリックで拡大
   return`<div style="font-size:11px;color:var(--muted);margin:8px 0 4px">${label}（${imgs.length}枚）</div>
-    <div class="photo-row">${imgs.map(u=>`<div class="photo-thumb-sm" onclick="openLightbox('${u}')"><img src="${u}" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none'"></div>`).join('')}</div>`;
+    <div class="photo-row">${imgs.map(u=>`
+      <div class="photo-thumb-sm" onclick="openLightbox('${u}')" style="cursor:pointer;position:relative;">
+        <img data-src="${u}" src="" loading="lazy" referrerpolicy="no-referrer"
+          style="width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s;"
+          onerror="this.parentElement.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);text-align:center;padding:4px;\'>読み込み失敗</div>'"
+          onload="this.style.opacity=1">
+      </div>`).join('')}</div>`;
+}
+
+// 遅延読み込み実行
+function lazyLoadImages(container){
+  const imgs=container?container.querySelectorAll('img[data-src]'):document.querySelectorAll('img[data-src]');
+  if('IntersectionObserver' in window){
+    const obs=new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){
+          const img=entry.target;
+          img.src=img.dataset.src;
+          obs.unobserve(img);
+        }
+      });
+    },{rootMargin:'100px'});
+    imgs.forEach(img=>obs.observe(img));
+  }else{
+    // フォールバック: 全部読み込む
+    imgs.forEach(img=>{img.src=img.dataset.src;});
+  }
 }
 
 // ══ SALON ══
@@ -1285,12 +1322,14 @@ const COLOR_MAP = {
 };
 
 function selectColor(colorKey, colorName, textKey) {
+  // Update button UI
   Object.keys(COLOR_MAP).forEach(n => {
     const btn = document.getElementById('cp-'+colorKey+'-'+n);
     if(btn) { btn.style.boxShadow = ''; btn.style.transform = ''; }
   });
   const selected = document.getElementById('cp-'+colorKey+'-'+colorName);
   if(selected) { selected.style.boxShadow = '0 0 0 3px var(--accent)'; selected.style.transform = 'scale(1.1)'; }
+  // Store selection temporarily
   if(!window._colorSelections) window._colorSelections = {};
   window._colorSelections[colorKey] = colorName;
 }
@@ -1310,8 +1349,10 @@ async function saveSettingField(key, colorKey) {
   const value = editor.innerHTML;
   const resultEl = document.getElementById('save-result-'+key);
   try {
+    // Save text
     const r = await apiPost({action:'saveSetting', key, value});
     if(!r.ok) throw new Error(r.error);
+    // Save color if applicable
     if(colorKey && window._colorSelections && window._colorSelections[colorKey]) {
       await apiPost({action:'saveSetting', key:colorKey, value:window._colorSelections[colorKey]});
     }
@@ -1322,6 +1363,7 @@ async function saveSettingField(key, colorKey) {
   }
 }
 
+// Keep backward compat
 async function saveSimpleSetting(key){
   const el=document.getElementById('setting-'+key);if(!el)return;
   const value=el.value;
@@ -1336,7 +1378,7 @@ async function saveSetting(key) { await saveSettingField(key, null); }
 
 
 // ══ UPLOAD TAB ══
-let uploadQueue = [];
+let uploadQueue = []; // {file, name, category, status, url}
 
 function handleUploadFiles(e) {
   const files = Array.from(e.target.files);
@@ -1344,9 +1386,11 @@ function handleUploadFiles(e) {
     uploadQueue.push({ file: f, name: f.name.replace(/\.[^.]+$/, ''), category: '80cm', status: 'pending', url: '' });
   });
   renderUploadItems();
+  // reset input so same file can be added again
   e.target.value = '';
 }
 
+// drag & drop
 document.addEventListener('DOMContentLoaded', () => {
   const dz = document.getElementById('drop-zone');
   if (!dz) return;
@@ -1365,6 +1409,7 @@ function renderUploadItems() {
   if (!wrap) return;
   if (uploadQueue.length === 0) { wrap.innerHTML = ''; return; }
 
+  const allDone = uploadQueue.every(i => i.status === 'done');
   const anyPending = uploadQueue.some(i => i.status === 'pending');
 
   wrap.innerHTML = uploadQueue.map((item, idx) => {
@@ -1408,13 +1453,14 @@ function renderUploadItems() {
     </div>`;
   }).join('');
 
+  // set preview images
   uploadQueue.forEach((item, idx) => {
     if (!item.previewUrl && item.file && item.status === 'pending') {
       const reader = new FileReader();
       reader.onload = e => {
         item.previewUrl = e.target.result;
-        const t = document.querySelector(`#uitem-${idx} .upload-item-thumb`);
-        if(t) t.innerHTML = `<img src="${e.target.result}">`;
+        const img = document.querySelector(`#uitem-${idx} .upload-item-thumb img`);
+        if (!img) { const t = document.querySelector(`#uitem-${idx} .upload-item-thumb`); if(t) t.innerHTML = `<img src="${e.target.result}">`; }
       };
       reader.readAsDataURL(item.file);
     }
