@@ -332,11 +332,14 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbzzfrb8uqwPa2lCd94UE3e-uD_2ymfnYk_HFsg9yGM3LDMRNxBOEs3Zd1vK3ZbpkeaJ/exec';
+const API='https://script.google.com/macros/s/AKfycbxQs6PwIvGetCgY1WL6SY0NrN7dceirFucKK-w1GB5RxQRAIk2wj9uvNFMyxAD_kttQ/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
 async function apiGet(p){const r=await fetch(API+'?'+new URLSearchParams(p));return r.json();}
+// 管理者用（パスワード自動付与）
+async function adminPost(b){return apiPost({...b,adminPass:adminPassword});}
+async function adminGet(p){const r=await fetch(API+'?'+new URLSearchParams({...p,adminPass:adminPassword}));return r.json();}
 
 // photo store
 const PS={'fl-person':[],'fl-outfit':[],'fh-hair':[],'fh-makeup':[],'fh-length':[],'mh-hair':[],'mh-length':[]};
@@ -905,10 +908,28 @@ function removePhoto(key,i){PS[key].splice(i,1);renderPreviews(key);}
 
 // ══ ADMIN ══
 let allCustomers=[];
+let adminPassword='';
 async function initAdmin(){
+  // パスワード入力
+  const pw=prompt('管理者パスワードを入力してください');
+  if(!pw){
+    document.getElementById('admin-wrap').innerHTML='<p style="text-align:center;padding:60px 0;color:var(--muted);font-size:14px">パスワードが入力されませんでした。</p>';
+    document.getElementById('admin-sub').textContent='未認証';
+    return;
+  }
+  adminPassword=pw;
+  document.getElementById('admin-wrap').innerHTML='<div class="loading-box">認証中…</div>';
   try{
-    const[custResult]=await Promise.all([apiGet({action:'getAllCustomers'}),loadSettings()]);
-    if(!custResult.ok)throw new Error(custResult.error);
+    const[custResult]=await Promise.all([adminGet({action:'getAllCustomers'}),loadSettings()]);
+    if(!custResult.ok){
+      if(custResult.error==='unauthorized'){
+        document.getElementById('admin-wrap').innerHTML='<p style="text-align:center;padding:60px 0;color:var(--error);font-size:14px">パスワードが違います。</p>';
+        document.getElementById('admin-sub').textContent='認証失敗';
+      }else{
+        throw new Error(custResult.error);
+      }
+      return;
+    }
     allCustomers=custResult.data.reverse();
     showAdminDash();
   }catch(e){
@@ -967,7 +988,7 @@ async function createCustomer(){
   if(!name){alert('お客様名を入力してください');return;}
   if(!shootDate){alert('撮影日を入力してください');return;}
   try{
-    const r=await apiPost({action:'createCustomer',name,shootDate,flowerOption:'none',hairOption:'none'});
+    const r=await adminPost({action:'createCustomer',name,shootDate,flowerOption:'none',hairOption:'none'});
     if(!r.ok)throw new Error(r.error);
     const url=location.origin+location.pathname+'?cid='+r.cid;
     document.getElementById('created-url-text').textContent=url;
@@ -1052,19 +1073,19 @@ async function copyUrlAndMark(url,cid,section,btn){
   if(cx){if(!cx.copiedSections)cx.copiedSections={};cx.copiedSections[section]=true;}
   const label=btn.closest('.section-url-row')?.querySelector('.section-url-label');
   if(label&&!label.querySelector('.copied-badge')){const b=document.createElement('span');b.className='copied-badge';b.textContent='コピー済み';label.appendChild(b);}
-  apiPost({action:'markUrlCopied',cid,section});
+  adminPost({action:'markUrlCopied',cid,section});
 }
 async function completeCustomer(id){
   if(!confirm('対応済みに移動しますか？'))return;
   try{
-    const r=await apiPost({action:'markComplete',cid:id});
+    const r=await adminPost({action:'markComplete',cid:id});
     if(r.ok){const cx=allCustomers.find(x=>x.id===id);if(cx)cx.completed=true;showAdminList('pending');}
   }catch(e){alert('エラーが発生しました。');}
 }
 async function deleteCustomer(id){
   if(!confirm('このお客様のデータを完全に削除しますか？\nこの操作は取り消せません。'))return;
   try{
-    const r=await apiPost({action:'deleteCustomer',cid:id});
+    const r=await adminPost({action:'deleteCustomer',cid:id});
     if(r.ok){
       allCustomers=allCustomers.filter(x=>x.id!==id);
       const card=document.getElementById('card-'+id);
@@ -1083,7 +1104,7 @@ async function loadDetail(id){
   const btn=document.getElementById('det-btn-'+id);
   btn.textContent='読み込み中…';btn.disabled=true;
   try{
-    const r=await apiGet({action:'getCustomerDetail',cid:id});
+    const r=await adminGet({action:'getCustomerDetail',cid:id});
     if(!r.ok)throw new Error(r.error);
     const d=r.data,w=document.getElementById('det-'+id);
     let h='';
@@ -1293,7 +1314,7 @@ async function loadSettingsTab() {
   const wrap = document.getElementById('settings-fields');
   wrap.innerHTML = '<div class="loading-box">読み込み中…</div>';
   try {
-    const r = await apiGet({action:'getSettings'});
+    const r = await adminGet({action:'getSettings'});
     if(!r.ok) throw new Error(r.error);
     const s = r.data;
 
@@ -1395,11 +1416,11 @@ async function saveSettingField(key, colorKey) {
   const resultEl = document.getElementById('save-result-'+key);
   try {
     // Save text
-    const r = await apiPost({action:'saveSetting', key, value});
+    const r = await adminPost({action:'saveSetting', key, value});
     if(!r.ok) throw new Error(r.error);
     // Save color if applicable
     if(colorKey && window._colorSelections && window._colorSelections[colorKey]) {
-      await apiPost({action:'saveSetting', key:colorKey, value:window._colorSelections[colorKey]});
+      await adminPost({action:'saveSetting', key:colorKey, value:window._colorSelections[colorKey]});
     }
     if(resultEl){ resultEl.style.display='inline'; setTimeout(()=>resultEl.style.display='none', 3000); }
     settingsLoaded = false;
@@ -1414,7 +1435,7 @@ async function saveSimpleSetting(key){
   const value=el.value;
   const resultEl=document.getElementById('save-result-'+key);
   try{
-    const r=await apiPost({action:'saveSetting',key,value});
+    const r=await adminPost({action:'saveSetting',key,value});
     if(r.ok){SETTINGS[key]=value;settingsLoaded=false;if(resultEl){resultEl.style.display='inline';setTimeout(()=>resultEl.style.display='none',3000);}}
     else alert('保存に失敗しました');
   }catch(e){alert('通信エラー');}
@@ -1531,7 +1552,7 @@ async function uploadOne(idx) {
   renderUploadItems();
   try {
     const b64 = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(item.file); });
-    const result = await apiPost({ action: 'uploadOutfitImage', b64, filename: item.file.name });
+    const result = await adminPost({ action: 'uploadOutfitImage', b64, filename: item.file.name });
     if (result.ok) {
       item.status = 'done';
       item.url = result.url;
@@ -1561,7 +1582,7 @@ async function registerOne(idx) {
   if (btn) { btn.disabled = true; btn.textContent = '登録中…'; }
   try {
     const id = 'o_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
-    const r = await apiPost({ action: 'registerOutfit', id, name: item.name, category: item.category, imageURL: item.url });
+    const r = await adminPost({ action: 'registerOutfit', id, name: item.name, category: item.category, imageURL: item.url });
     if (r.ok) {
       if (result_el) { result_el.textContent = '✓ outfitsシートに登録しました！'; result_el.className = 'register-result ok show'; }
       if (btn) btn.style.display = 'none';
