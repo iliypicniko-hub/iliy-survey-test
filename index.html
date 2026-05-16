@@ -277,6 +277,17 @@
   .option-modal-title{font-size:16px;font-weight:500;margin-bottom:14px;}
   .option-modal-body{font-size:13px;line-height:1.8;color:var(--dark);}
   .option-modal-close{margin-top:20px;width:100%;padding:11px;background:var(--dark);border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:white;cursor:pointer;}
+  /* OUTFIT SLIDER */
+  .outfit-slider{position:relative;overflow:hidden;aspect-ratio:3/4;background:#f0f0ec;}
+  .outfit-slides{display:flex;transition:transform .3s ease;height:100%;}
+  .outfit-slide{min-width:100%;height:100%;flex-shrink:0;}
+  .outfit-slide img{width:100%;height:100%;object-fit:cover;}
+  .slider-btn{position:absolute;top:50%;transform:translateY(-50%);width:26px;height:26px;background:rgba(255,255,255,.85);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+  .slider-btn.prev{left:4px;}
+  .slider-btn.next{right:4px;}
+  .slider-dots{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);display:flex;gap:3px;}
+  .slider-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.6);}
+  .slider-dot.active{background:white;}
 </style>
 </head>
 <body>
@@ -346,7 +357,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbwHfcoCGm9jAyVg8MaYHtVpikjAqvUPN743WOaYXtwmi_X4WEjBrFx1Ih0CItGT478/exec';
+const API='https://script.google.com/macros/s/AKfycbzYUQ6naGzVzIAVsheIMahyImVSWLutJGBzH2TC3scNQl8IZDSLhia--sPpgkMNsAs6/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -761,7 +772,7 @@ function renderOutfitContent(){
         :`<div class="outfit-grid">${filtered.map(o=>`
           <div class="outfit-card${outfitData.selected.includes(o.id)?' selected':''}" id="oc-${o.id}" onclick="toggleOutfit('${o.id}')">
             <div class="outfit-img-wrap"><img src="${o.img||''}" alt="${o.name}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'padding:20px;text-align:center;color:var(--muted);font-size:11px\\'>画像なし</div>'"></div>
-            <div class="outfit-label-text">${o.name}</div>
+            <div class="outfit-label-text">${o.name}${o.note?`<div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">${o.note}</div>`:''}</div>
             <div class="outfit-check">✓</div>
             <div class="outfit-count-badge" id="ob-${o.id}">${outfitData.selected.indexOf(o.id)+1}</div>
           </div>`).join('')}</div>`
@@ -1597,6 +1608,14 @@ function renderUploadItems() {
               ${['80cm','90cm','100cm','マタニティ'].map(c=>`<option value="${c}"${item.category===c?' selected':''}>${c}</option>`).join('')}
             </select>
           </div>
+          <div class="upload-item-field" style="grid-column:1/-1">
+            <label>説明文<span style="color:var(--muted);font-size:10px;margin-left:4px">任意</span></label>
+            <input type="text" value="${item.note||''}" onchange="uploadQueue[${idx}].note=this.value" placeholder="例：ロンパース、ゆったりシルエット">
+          </div>
+          <div class="upload-item-field" style="grid-column:1/-1">
+            <label>追加写真URL<span style="color:var(--muted);font-size:10px;margin-left:4px">任意・カンマ区切りで複数</span></label>
+            <input type="text" value="${item.imgs||''}" onchange="uploadQueue[${idx}].imgs=this.value" placeholder="https://lh3.googleusercontent.com/d/xxx,https://...">
+          </div>
         </div>
         ${urlHtml}
         ${item.status === 'pending' ? `<button class="btn-submit" style="width:100%;margin-top:4px" onclick="uploadOne(${idx})">アップロードしてURLを取得</button>` : ''}
@@ -1684,6 +1703,23 @@ async function registerOne(idx) {
 }
 
 // utils
+// Outfit slider
+const sliderState={};
+function slideOutfit(id,dir){
+  if(!sliderState[id])sliderState[id]=0;
+  const slides=document.getElementById('slides-'+id);
+  if(!slides)return;
+  const total=slides.children.length;
+  sliderState[id]=(sliderState[id]+dir+total)%total;
+  slides.style.transform=`translateX(-${sliderState[id]*100}%)`;
+  // dots
+  const dotsEl=document.getElementById('dots-'+id);
+  if(dotsEl){
+    dotsEl.querySelectorAll('.slider-dot').forEach((d,i)=>{
+      d.classList.toggle('active',i===sliderState[id]);
+    });
+  }
+}
 function showOptionDetail(type){
   const titles={flower:'🌷 花束オプション詳細',hair:'💄 ヘアメイクオプション詳細',outfit:'👗 衣装レンタルオプション詳細'};
   const keys={flower:'flower_detail',hair:'hair_detail',outfit:'outfit_detail'};
