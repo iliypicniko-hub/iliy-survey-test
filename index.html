@@ -1612,9 +1612,18 @@ function renderUploadItems() {
             <label>説明文<span style="color:var(--muted);font-size:10px;margin-left:4px">任意</span></label>
             <input type="text" value="${item.note||''}" onchange="uploadQueue[${idx}].note=this.value" placeholder="例：ロンパース、ゆったりシルエット">
           </div>
-          <div class="upload-item-field" style="grid-column:1/-1">
-            <label>追加写真URL<span style="color:var(--muted);font-size:10px;margin-left:4px">任意・カンマ区切りで複数</span></label>
-            <input type="text" value="${item.imgs||''}" onchange="uploadQueue[${idx}].imgs=this.value" placeholder="https://lh3.googleusercontent.com/d/xxx,https://...">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;">追加写真<span style="margin-left:4px;font-size:10px;">（スライドで表示・最大4枚）</span></label>
+          <div id="extra-previews-${idx}" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+            ${(item.extraFiles||[]).map((ef,ei)=>`
+              <div style="position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--border);">
+                <img src="${item.extraPreviews&&item.extraPreviews[ei]||''}" style="width:100%;height:100%;object-fit:cover;">
+                <button onclick="removeExtraFile(${idx},${ei})" style="position:absolute;top:2px;right:2px;width:18px;height:18px;background:rgba(0,0,0,.5);border:none;border-radius:50%;color:white;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+              </div>`).join('')}
+            ${(item.extraFiles||[]).length<4?`<label style="width:64px;height:64px;border:1.5px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:var(--muted);background:var(--warm-white);">
+              +<input type="file" accept="image/*" style="display:none" onchange="addExtraFile(event,${idx})">
+            </label>`:''}
           </div>
         </div>
         ${urlHtml}
@@ -1646,6 +1655,25 @@ function renderUploadItems() {
   }
 }
 
+function addExtraFile(e,idx){
+  const f=e.target.files[0];if(!f)return;
+  if(!uploadQueue[idx].extraFiles)uploadQueue[idx].extraFiles=[];
+  if(!uploadQueue[idx].extraPreviews)uploadQueue[idx].extraPreviews=[];
+  if(uploadQueue[idx].extraFiles.length>=4)return;
+  uploadQueue[idx].extraFiles.push(f);
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    uploadQueue[idx].extraPreviews.push(ev.target.result);
+    renderUploadItems();
+  };
+  reader.readAsDataURL(f);
+  e.target.value='';
+}
+function removeExtraFile(idx,ei){
+  uploadQueue[idx].extraFiles.splice(ei,1);
+  uploadQueue[idx].extraPreviews.splice(ei,1);
+  renderUploadItems();
+}
 function removeUploadItem(idx) {
   uploadQueue.splice(idx, 1);
   renderUploadItems();
@@ -1657,15 +1685,23 @@ async function uploadOne(idx) {
   item.status = 'uploading';
   renderUploadItems();
   try {
+    // メイン写真アップロード
     const b64 = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(item.file); });
     const result = await adminPost({ action: 'uploadOutfitImage', b64, filename: item.file.name });
-    if (result.ok) {
-      item.status = 'done';
-      item.url = result.url;
-    } else {
-      item.status = 'error';
-      console.error(result.error);
+    if (!result.ok) { item.status = 'error'; renderUploadItems(); return; }
+    item.url = result.url;
+    // 追加写真アップロード
+    item.imgs = '';
+    if(item.extraFiles && item.extraFiles.length > 0){
+      const extraUrls = [];
+      for(const ef of item.extraFiles){
+        const eb64 = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(ef); });
+        const er = await adminPost({ action: 'uploadOutfitImage', b64: eb64, filename: ef.name });
+        if(er.ok) extraUrls.push(er.url);
+      }
+      item.imgs = extraUrls.join(',');
     }
+    item.status = 'done';
   } catch(e) {
     item.status = 'error';
   }
