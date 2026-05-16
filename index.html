@@ -771,7 +771,18 @@ function renderOutfitContent(){
         ?'<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">このカテゴリには衣装がまだ登録されていません</div>'
         :`<div class="outfit-grid">${filtered.map(o=>`
           <div class="outfit-card${outfitData.selected.includes(o.id)?' selected':''}" id="oc-${o.id}" onclick="toggleOutfit('${o.id}')">
-            <div class="outfit-img-wrap"><img src="${o.img||''}" alt="${o.name}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'padding:20px;text-align:center;color:var(--muted);font-size:11px\\'>画像なし</div>'"></div>
+            <div class="outfit-slider" id="slider-${o.id}" style="aspect-ratio:3/4;position:relative;overflow:hidden;background:#f0f0ec;">
+              <div class="outfit-slides" id="slides-${o.id}" style="display:flex;height:100%;transition:transform .3s ease;">
+                ${[o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])]
+                  .filter(Boolean)
+                  .map(img=>`<div style="min-width:100%;height:100%;flex-shrink:0;"><img src="${img}" alt="${o.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"></div>`)
+                  .join('')}
+                ${!o.img?`<div style="min-width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)">画像なし</div>`:''}
+              </div>
+              ${(()=>{const imgs=[o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])].filter(Boolean);return imgs.length>1?`
+                <button class="slider-btn prev" onclick="event.stopPropagation();slideOutfit('${o.id}',-1,${JSON.stringify([o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])].filter(Boolean)).length})">‹</button>
+                <button class="slider-btn next" onclick="event.stopPropagation();slideOutfit('${o.id}',1,${JSON.stringify([o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])].filter(Boolean)).length})">›</button>`:''})()}
+            </div>
             <div class="outfit-label-text">${o.name}${o.note?`<div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">${o.note}</div>`:''}</div>
             <div class="outfit-check">✓</div>
             <div class="outfit-count-badge" id="ob-${o.id}">${outfitData.selected.indexOf(o.id)+1}</div>
@@ -1615,7 +1626,10 @@ function renderUploadItems() {
         </div>
         <div style="margin-bottom:12px;">
           <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;">追加写真<span style="margin-left:4px;font-size:10px;">（スライドで表示・最大4枚）</span></label>
-          <div id="extra-previews-${idx}" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <div id="extra-previews-${idx}" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"
+            ondragover="event.preventDefault();this.style.outline='2px dashed var(--accent)'"
+            ondragleave="this.style.outline=''"
+            ondrop="event.preventDefault();this.style.outline='';Array.from(event.dataTransfer.files).filter(f=>f.type.startsWith('image/')).forEach(f=>addExtraFileObj(f,${idx}))">
             ${(item.extraFiles||[]).map((ef,ei)=>`
               <div style="position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--border);">
                 <img src="${item.extraPreviews&&item.extraPreviews[ei]||''}" style="width:100%;height:100%;object-fit:cover;">
@@ -1657,6 +1671,10 @@ function renderUploadItems() {
 
 function addExtraFile(e,idx){
   const f=e.target.files[0];if(!f)return;
+  addExtraFileObj(f,idx);
+  e.target.value='';
+}
+function addExtraFileObj(f,idx){
   if(!uploadQueue[idx].extraFiles)uploadQueue[idx].extraFiles=[];
   if(!uploadQueue[idx].extraPreviews)uploadQueue[idx].extraPreviews=[];
   if(uploadQueue[idx].extraFiles.length>=4)return;
@@ -1667,7 +1685,6 @@ function addExtraFile(e,idx){
     renderUploadItems();
   };
   reader.readAsDataURL(f);
-  e.target.value='';
 }
 function removeExtraFile(idx,ei){
   uploadQueue[idx].extraFiles.splice(ei,1);
@@ -1741,20 +1758,13 @@ async function registerOne(idx) {
 // utils
 // Outfit slider
 const sliderState={};
-function slideOutfit(id,dir){
+function slideOutfit(id,dir,total){
   if(!sliderState[id])sliderState[id]=0;
   const slides=document.getElementById('slides-'+id);
   if(!slides)return;
-  const total=slides.children.length;
-  sliderState[id]=(sliderState[id]+dir+total)%total;
+  const t=total||slides.children.length;
+  sliderState[id]=(sliderState[id]+dir+t)%t;
   slides.style.transform=`translateX(-${sliderState[id]*100}%)`;
-  // dots
-  const dotsEl=document.getElementById('dots-'+id);
-  if(dotsEl){
-    dotsEl.querySelectorAll('.slider-dot').forEach((d,i)=>{
-      d.classList.toggle('active',i===sliderState[id]);
-    });
-  }
 }
 function showOptionDetail(type){
   const titles={flower:'🌷 花束オプション詳細',hair:'💄 ヘアメイクオプション詳細',outfit:'👗 衣装レンタルオプション詳細'};
