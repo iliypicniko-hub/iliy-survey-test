@@ -338,6 +338,7 @@ const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
 async function apiGet(p){const r=await fetch(API+'?'+new URLSearchParams(p));return r.json();}
 // 管理者用（パスワード自動付与）
+let adminPassword='';
 async function adminPost(b){return apiPost({...b,adminPass:adminPassword});}
 async function adminGet(p){const r=await fetch(API+'?'+new URLSearchParams({...p,adminPass:adminPassword}));return r.json();}
 
@@ -908,7 +909,6 @@ function removePhoto(key,i){PS[key].splice(i,1);renderPreviews(key);}
 
 // ══ ADMIN ══
 let allCustomers=[];
-let adminPassword='';
 async function initAdmin(){
   // パスワード入力
   const pw=prompt('管理者パスワードを入力してください');
