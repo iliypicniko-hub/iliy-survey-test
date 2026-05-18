@@ -367,7 +367,7 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbzYUQ6naGzVzIAVsheIMahyImVSWLutJGBzH2TC3scNQl8IZDSLhia--sPpgkMNsAs6/exec';
+const API='https://script.google.com/macros/s/AKfycbwPMc0xwB-uzxuvdfMD3AcQ9rJvpWHnM_EsWk1zMmlJGK64AJcQINJEazx1R9XnVccQ/exec';
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -1768,12 +1768,13 @@ async function registerOne(idx) {
 // utils
 // Outfit slider
 const sliderState={};
-function slideOutfit(id,dir,total){
-  if(!sliderState[id])sliderState[id]=0;
+function slideOutfit(id,dir){
   const slides=document.getElementById('slides-'+id);
   if(!slides)return;
-  const t=total||slides.children.length;
-  sliderState[id]=(sliderState[id]+dir+t)%t;
+  const total=slides.children.length;
+  if(total<=1)return;
+  if(!sliderState[id])sliderState[id]=0;
+  sliderState[id]=(sliderState[id]+dir+total)%total;
   slides.style.transform=`translateX(-${sliderState[id]*100}%)`;
 }
 function showOptionDetail(type){
