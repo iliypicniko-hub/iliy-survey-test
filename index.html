@@ -1011,7 +1011,7 @@ function removePhoto(key,i){PS[key].splice(i,1);renderPreviews(key);}
 
 // ══ ADMIN ══
 let allCustomers=[];
-async async function reloadAdmin(){
+async function reloadAdmin(){
   if(!adminPassword){await initAdmin();return;}
   // 現在のタブと表示状態を記憶
   const currentTab=currentAdminTab||'customers';
