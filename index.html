@@ -362,8 +362,11 @@
   </div>
 </div>
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <span class="lightbox-close">✕</span>
-  <img id="lightbox-img" src="">
+  <span class="lightbox-close" onclick="closeLightbox()">✕</span>
+  <img id="lightbox-img" src="" onclick="event.stopPropagation()">
+  <button id="lb-prev" onclick="event.stopPropagation();lbSlide(-1)" style="display:none;position:absolute;left:16px;top:50%;transform:translateY(-50%);width:40px;height:40px;background:rgba(255,255,255,.2);border:none;border-radius:50%;color:white;font-size:22px;cursor:pointer;">‹</button>
+  <button id="lb-next" onclick="event.stopPropagation();lbSlide(1)" style="display:none;position:absolute;right:16px;top:50%;transform:translateY(-50%);width:40px;height:40px;background:rgba(255,255,255,.2);border:none;border-radius:50%;color:white;font-size:22px;cursor:pointer;">›</button>
+  <div id="lb-dots" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;"></div>
 </div>
 
 <script>
@@ -430,7 +433,12 @@ let hairOptionType='',selectedCategory='';
 async function initClient(id){
   document.getElementById('client-header-sub').textContent='読み込み中…';
   try{
-    const r=await apiGet({action:'getCustomer',cid:id});
+    // getCustomer・settings・outfitsを並列取得
+    const[r]=await Promise.all([
+      apiGet({action:'getCustomer',cid:id}),
+      loadSettings(),
+      loadOutfits()
+    ]);
     if(!r.ok)throw new Error(r.error);
     customer=r.data;sectionStatus=customer.sectionSentStatus||{};
     document.getElementById('client-header-sub').textContent=customer.name+' 様の事前アンケート';
@@ -610,10 +618,12 @@ function goFlower(){
 // ── HAIR ──
 let hairSteps=[];
 function buildHairSteps(){
-  const c=['h-basic'],f=['h-f-hair','h-f-makeup','h-f-photo'],male=['h-m-hair','h-m-photo'];
-  if(hairOptionType==='female')return[...c,...f,'h-confirm'];
-  if(hairOptionType==='male')return[...c,...male,'h-confirm'];
-  return[...c,...f,...male,'h-confirm'];
+  const fName=['h-f-name'],f=['h-f-hair','h-f-makeup','h-f-photo'];
+  const mName=['h-m-name'],male=['h-m-hair','h-m-photo'];
+  if(hairOptionType==='female')return[...fName,...f,'h-confirm'];
+  if(hairOptionType==='male')return[...mName,...male,'h-confirm'];
+  // both: 女性名前→女性アンケート→男性名前→男性アンケート
+  return[...fName,...f,...mName,...male,'h-confirm'];
 }
 async function renderHair(){
   if(!settingsLoaded) await loadSettings();
@@ -625,11 +635,23 @@ async function renderHair(){
 }
 function buildHairPage(s){
   switch(s){
+    case 'h-f-name':return`<div class="fade-in">
+      <div class="section-badge hair-f">💄 ヘアメイクオプション</div>
+      <div class="page-heading">ヘアメイクについて</div>
+      <div class="notice-box" style="${noticeStyle(SETTINGS.hair_notice_color||'cream')}">${SETTINGS.hair_notice||'🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。<br><br>🔶 メイクアイテムのお持ち込みは自由です。敏感肌の方は普段使用のアイテムをお持ち込みください。<br><br>＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。'}</div>
+      <div class="field"><label>女性のお名前<span class="req">必須</span></label><input type="text" id="h-name-female" placeholder="山田 花子" value="${commonData.name||''}"><div class="error-msg" id="err-h-name-female">お名前を入力してください</div></div>
+      <div class="nav"><button class="btn-back" onclick="renderSelector()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
+    </div>`;
+    case 'h-m-name':return`<div class="fade-in">
+      <div class="section-badge hair-m">👨 男性ヘアセット</div>
+      <div class="page-heading">男性のお名前</div>
+      <div class="field"><label>男性のお名前<span class="req">必須</span></label><input type="text" id="h-name-male" placeholder="山田 太郎" value="${commonData.nameMale||''}"><div class="error-msg" id="err-h-name-male">お名前を入力してください</div></div>
+      <div class="nav"><button class="btn-back" onclick="currentStep--;renderHair()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
+    </div>`;
     case 'h-basic':return`<div class="fade-in">
       <div class="section-badge hair-f">💄 ヘアメイクオプション</div>
       <div class="page-heading">ヘアメイクについて</div>
       <div class="notice-box" style="${noticeStyle(SETTINGS.hair_notice_color||'cream')}">${SETTINGS.hair_notice||'🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。<br><br>🔶 メイクアイテムのお持ち込みは自由です。敏感肌の方は普段使用のアイテムをお持ち込みください。<br><br>＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。'}</div>
-      ${hairOptionType==='both'?`<div class="field"><label>男性のお名前<span class="req">必須</span></label><input type="text" id="h-name-male" placeholder="山田 太郎" value="${commonData.nameMale||''}"><div class="error-msg" id="err-h-name-male">お名前を入力してください</div></div>`:''}
       <div class="nav"><button class="btn-back" onclick="renderSelector()">← 戻る</button><button class="btn-next" onclick="goHair()">次へ　→</button></div>
     </div>`;
     case 'h-f-hair':return`<div class="fade-in">
@@ -710,6 +732,14 @@ function goHair(){
   const s=hairSteps[currentStep];let ok=true;
   const show=id=>{const e=document.getElementById(id);if(e){e.classList.add('show');ok=false;}};
   const hide=id=>{const e=document.getElementById(id);if(e)e.classList.remove('show');};
+  if(s==='h-f-name'){
+    commonData.name=document.getElementById('h-name-female')?.value||commonData.name||'';
+    if(!commonData.name){show('err-h-name-female');}else{hide('err-h-name-female');}
+  }
+  if(s==='h-m-name'){
+    commonData.nameMale=document.getElementById('h-name-male')?.value||commonData.nameMale||'';
+    if(!commonData.nameMale){show('err-h-name-male');}else{hide('err-h-name-male');}
+  }
   if(s==='h-basic'&&hairOptionType==='both'){
     commonData.nameMale=document.getElementById('h-name-male')?.value||commonData.nameMale||'';
     if(!commonData.nameMale){show('err-h-name-male');}else{hide('err-h-name-male');}
@@ -781,7 +811,7 @@ function renderOutfitContent(){
         ?'<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">このカテゴリには衣装がまだ登録されていません</div>'
         :`<div class="outfit-grid">${filtered.map(o=>`
           <div class="outfit-card${outfitData.selected.includes(o.id)?' selected':''}" id="oc-${o.id}" onclick="toggleOutfit('${o.id}')">
-            <div class="outfit-slider" id="slider-${o.id}" style="aspect-ratio:3/4;position:relative;overflow:hidden;background:#f0f0ec;">
+            <div class="outfit-slider" id="slider-${o.id}" style="aspect-ratio:3/4;position:relative;overflow:hidden;background:#f0f0ec;cursor:zoom-in;" onclick="event.stopPropagation();(function(){const imgs=[o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])].filter(Boolean);openOutfitLightbox('${o.id}',imgs,sliderState['${o.id}']||0);})()">
               <div class="outfit-slides" id="slides-${o.id}">
                 ${[o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])]
                   .filter(Boolean)
@@ -817,6 +847,20 @@ function renderOutfitContent(){
     </div>
   </div>`;
   window.scrollTo({top:0,behavior:'smooth'});
+  // 衣装画像タップでライトボックス
+  setTimeout(()=>{
+    filtered.forEach(o=>{
+      const slider=document.getElementById('slider-'+o.id);
+      if(!slider)return;
+      const imgs=[o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])].filter(Boolean);
+      if(!imgs.length)return;
+      slider.style.cursor='zoom-in';
+      slider.addEventListener('click',function(e){
+        e.stopPropagation();
+        openOutfitLightbox(o.id,imgs,sliderState[o.id]||0);
+      },{once:false});
+    });
+  },100);
 }
 
 function switchCategory(cat){
@@ -1027,7 +1071,8 @@ function isUrgent(c){
   const shoot=new Date(c.shootDate);
   const now=new Date();
   const diff=Math.ceil((shoot-now)/(1000*60*60*24));
-  return diff<=days&&diff>=0&&!isAllAnswered(c);
+  // 回答済みでも対応済みでなければ警告（撮影日が迫っている場合）
+  return diff<=days&&diff>=0;
 }
 
 function showAdminDash(){
@@ -1803,8 +1848,30 @@ function noticeStyle(colorName) {
 function fmtD(s){if(!s)return'';try{const d=new Date(s);if(!isNaN(d))return d.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Tokyo'});}catch(e){}return String(s).slice(0,10);}
 function fmtDT(s){if(!s)return'';if(!String(s).includes('GMT'))return s;try{const d=new Date(s);if(!isNaN(d))return d.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'});}catch(e){}return s;}
 function copyText(t,btn){navigator.clipboard.writeText(t).then(()=>{btn.textContent='コピー完了!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='コピー';btn.classList.remove('copied');},2000);});}
-function openLightbox(s){document.getElementById('lightbox-img').src=s;document.getElementById('lightbox').classList.add('open');}
-function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
+let lbImgs=[],lbIdx=0;
+function openLightbox(s){openOutfitLightbox(null,[s],0);}
+function openOutfitLightbox(id,imgs,startIdx){
+  lbImgs=imgs||[];lbIdx=startIdx||0;
+  if(!lbImgs.length)return;
+  document.getElementById('lightbox-img').src=lbImgs[lbIdx];
+  document.getElementById('lightbox').classList.add('open');
+  const prev=document.getElementById('lb-prev');
+  const next=document.getElementById('lb-next');
+  const dots=document.getElementById('lb-dots');
+  if(lbImgs.length>1){
+    prev.style.display='block';next.style.display='block';
+    dots.innerHTML=lbImgs.map((_,i)=>`<div style="width:8px;height:8px;border-radius:50%;background:${i===lbIdx?'white':'rgba(255,255,255,.4)'}"></div>`).join('');
+  }else{
+    prev.style.display='none';next.style.display='none';dots.innerHTML='';
+  }
+}
+function lbSlide(dir){
+  lbIdx=(lbIdx+dir+lbImgs.length)%lbImgs.length;
+  document.getElementById('lightbox-img').src=lbImgs[lbIdx];
+  const dots=document.getElementById('lb-dots');
+  if(dots)dots.innerHTML=lbImgs.map((_,i)=>`<div style="width:8px;height:8px;border-radius:50%;background:${i===lbIdx?'white':'rgba(255,255,255,.4)'}"></div>`).join('');
+}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');lbImgs=[];lbIdx=0;}
 </script>
 </body>
 </html>
