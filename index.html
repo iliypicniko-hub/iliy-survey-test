@@ -1488,35 +1488,39 @@ function buildAdminCard(c){
   </div>`;
 }
 
+async function reloadCustomers(){
+  const a=await adminGet({action:'getAllCustomers'});
+  if(a.ok)allCustomers=a.data.reverse();
+}
+async function resetFailNotice(r){
+  if(r.error==='locked'||r.error==='cancelled')await noticeDialog({title:'リセットできません',items:[r.message||'リセットできませんでした。'],okText:'閉じる'});
+  else alert('リセットに失敗しました：'+(r.error||''));
+}
 async function resetAllOptions(cid,btn){
-  if(!confirm('全てのオプションをリセットします。\nお客様が最初からやり直せるようになります。'))return;
+  if(!confirm('全ての回答をリセットします。\nお客様が最初からやり直せるようになります。\n（花束ありの場合、転記先のアイテム・種類・備考は空になります）'))return;
   btn.disabled=true;btn.textContent='処理中…';
   try{
     const r=await adminPost({action:'resetAllOptions',cid});
     if(r.ok){
+      await reloadCustomers();
       const cx=allCustomers.find(x=>x.id===cid);
-      if(cx){
-        cx.sectionSentStatus={};
-        cx.flowerOption='none';
-        cx.hairOption='none';
-      }
       alert('リセットしました。お客様に再度URLを送ってください。');
       showAdminList(cx&&isDoneC(cx)?'done':'pending');
-    }else{alert('リセットに失敗しました：'+(r.error||''));}
+    }else{await resetFailNotice(r);btn.disabled=false;btn.textContent='🔄 全てリセット';}
   }catch(e){alert('エラーが発生しました。');}
 }
 async function resetSection(cid,section,btn){
-  if(!confirm(`「${section==='flower'?'花束':section==='hair'?'ヘアメイク':'衣装'}」の回答をリセットしますか？\nお客様が再回答できるようになります。`))return;
+  const label=section==='flower'?'花束':section==='hair'?'ヘアメイク':'衣装';
+  if(!confirm(`「${label}」の回答をリセットしますか？\nお客様が再回答できるようになります。`+(section==='flower'?'\n（転記先のアイテム・種類・備考は空になります）':'')))return;
   btn.disabled=true;btn.textContent='処理中…';
   try{
     const r=await adminPost({action:'resetSection',cid,section});
     if(r.ok){
+      await reloadCustomers();
       const cx=allCustomers.find(x=>x.id===cid);
-      if(cx&&cx.sectionSentStatus)cx.sectionSentStatus[section]=false;
       alert('リセットしました。お客様に再回答URLを送ってください。');
-      // カードを再描画
       showAdminList(cx&&isDoneC(cx)?'done':'pending');
-    }else{alert('リセットに失敗しました：'+(r.error||''));}
+    }else{await resetFailNotice(r);btn.disabled=false;btn.textContent='🔁 '+label+'をリセット';}
   }catch(e){alert('エラーが発生しました。');}
 }
 async function copyUrlAndMark(url,cid,section,btn){
@@ -1535,6 +1539,7 @@ function transcribeMissingNotice(r){
   const t=r&&r.transcribe;
   if(t&&t.ok&&t.missing&&t.missing.length)alert('転記先に次の列が見つからないため、その項目は転記されていません：\n'+t.missing.join('、')+'\n\n転記先の見出しの名前が変わっていないか確認してください。');
 }
+const RESET_BTN="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;";
 function toggleEdit(id){
   const box=document.getElementById('edit-'+id);if(!box)return;
   if(box.innerHTML){box.innerHTML='';return;}
@@ -1576,6 +1581,16 @@ function toggleEdit(id){
       ${f('opt-outfit','衣装レンタル',optSel('opt-outfit',[['','選択してください'],['none','なし'],['outfit','あり']],ov.outfit,!!st.outfit))}
     </div>
     <div style="display:flex;gap:8px"><button class="btn-create" id="ed-save-${id}" onclick="saveEdit('${id}')">変更を保存する</button><button onclick="toggleEdit('${id}')" style="padding:10px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;">閉じる</button></div>
+    ${(st.flower||st.hair||st.outfit)?`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">▼ 回答のやり直し（リセットすると、お客様が再回答できます）</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${st.flower?`<button onclick="resetSection('${id}','flower',this)" style="${RESET_BTN}">🌷 花束をリセット</button>`:''}
+        ${st.hair?`<button onclick="resetSection('${id}','hair',this)" style="${RESET_BTN}">💄 ヘアメイクをリセット</button>`:''}
+        ${st.outfit?`<button onclick="resetSection('${id}','outfit',this)" style="${RESET_BTN}">👗 衣装をリセット</button>`:''}
+        <button onclick="resetAllOptions('${id}',this)" style="${RESET_BTN}border-color:var(--muted);color:var(--muted);">🔄 全てリセット</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6">※花束をリセットすると、転記先のアイテム・種類・備考も空になり、状況は「回答待ち」に戻ります（行は消えません）。</div>
+    </div>`:''}
   </div>`;
 }
 async function saveEdit(id){
@@ -1721,17 +1736,6 @@ async function loadDetail(id){
           </div>`).join('')}</div>`;
       }
     }
-    // リセットボタン追加
-    h+=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">回答をリセットするとお客様が再回答できます。</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${d.flower?`<button onclick="resetSection('${id}','flower',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">🌷 花束をリセット</button>`:''}
-        ${d.hair?`<button onclick="resetSection('${id}','hair',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">💄 ヘアをリセット</button>`:''}
-        ${d.outfit?`<button onclick="resetSection('${id}','outfit',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">👗 衣装をリセット</button>`:''}
-        <button onclick="resetAllOptions('${id}',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--muted);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;">🔄 全てリセット（対象外も解消）</button>
-      </div>
-
-    </div>`;
     w.innerHTML=h||'<p style="font-size:12px;color:var(--muted)">回答なし</p>';
     btn.style.display='none';
     lazyLoadImages(w);
