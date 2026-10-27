@@ -1378,6 +1378,7 @@ async function createCustomer(){
     allCustomers.unshift({id:r.cid,name,shootDate,orderInfo,flowerOption:optFlower,hairOption:optHair,sectionSentStatus:{optionsFixed:true,...(optOutfit==='outfit'?{outfitChosen:true}:{outfitNotNeeded:true})},completed:false,copiedSections:{},cancelledAt:'',createdAt:new Date().toString()});
     document.getElementById('admin-sub').textContent='全'+allCustomers.length+'件';
     if(r.transcribe&&!r.transcribe.ok)alert('URLは発行しましたが、転記先への書き込みに失敗しました。\n'+(r.transcribe.error||''));
+    else transcribeMissingNotice(r);
   }catch(e){alert('URL発行に失敗しました。');}
   }finally{window._creating=false;}
 }
@@ -1529,6 +1530,11 @@ async function copyUrlAndMark(url,cid,section,btn){
   adminPost({action:'markUrlCopied',cid,section});
 }
 // ── 撮影日・発注情報の変更 ──
+// 転記先に見つからない列があるとき（見出しの名前が変わった等）に知らせる
+function transcribeMissingNotice(r){
+  const t=r&&r.transcribe;
+  if(t&&t.ok&&t.missing&&t.missing.length)alert('転記先に次の列が見つからないため、その項目は転記されていません：\n'+t.missing.join('、')+'\n\n転記先の見出しの名前が変わっていないか確認してください。');
+}
 function toggleEdit(id){
   const box=document.getElementById('edit-'+id);if(!box)return;
   if(box.innerHTML){box.innerHTML='';return;}
@@ -1603,6 +1609,7 @@ async function saveEdit(id){
     const nst=c.sectionSentStatus=c.sectionSentStatus||{};
     nst.optionsFixed=true;delete nst.allNotNeeded;delete nst.outfitChosen;delete nst.outfitNotNeeded;
     if(optO==='outfit')nst.outfitChosen=true;else nst.outfitNotNeeded=true;
+    transcribeMissingNotice(r);
     if(r.transcribe&&!r.transcribe.ok)alert('変更は保存しましたが、転記先への反映に失敗しました。\n'+(r.transcribe.error||''));
     else alert('変更しました。転記先にも反映されています。');
     showAdminList(isDoneC(c)?'done':'pending');
@@ -1617,6 +1624,7 @@ async function cancelCustomer(id){
     if(!r.ok)throw new Error(r.error);
     const wasDone=isDoneC(c);
     c.cancelledAt=r.cancelledAt;
+    transcribeMissingNotice(r);
     if(r.transcribe&&!r.transcribe.ok)alert('キャンセルしましたが、転記先への反映に失敗しました。\n'+(r.transcribe.error||''));
     showAdminList(wasDone?'done':'pending');
   }catch(e){alert('キャンセルに失敗しました。');}
