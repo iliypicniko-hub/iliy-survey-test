@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>iliy アンケート</title>
+<title>【TEST】iliy アンケート</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -58,6 +58,8 @@
   .choice-card input{position:absolute;opacity:0;width:0;height:0;}
   .choice-label{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--warm-white);border:1px solid var(--border);border-radius:8px;font-size:13px;transition:all .2s;cursor:pointer;line-height:1.4;}
   .choice-card input:checked+.choice-label{border-color:var(--accent);background:var(--accent-light);}
+  .choice-card.chk .choice-dot{border-radius:4px;}
+  .choice-card.chk input:checked+.choice-label .choice-dot::after{border-radius:1px;}
   .choice-dot{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;transition:all .2s;display:flex;align-items:center;justify-content:center;}
   .choice-card input:checked+.choice-label .choice-dot{border-color:var(--accent);background:var(--accent);}
   .choice-card input:checked+.choice-label .choice-dot::after{content:'';width:5px;height:5px;border-radius:50%;background:white;}
@@ -66,8 +68,8 @@
   .cat-tab{padding:7px 16px;border-radius:20px;border:1.5px solid var(--border);background:var(--warm-white);font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;}
   .cat-tab.active{border-color:var(--prop);background:var(--prop-light);color:var(--prop);}
   /* outfit grid */
-  .outfit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-  .outfit-card{position:relative;cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid var(--border);transition:all .2s;}
+  .outfit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .outfit-card{position:relative;cursor:pointer;border-radius:12px;overflow:hidden;border:1.5px solid var(--border);transition:all .2s;background:var(--warm-white);}
   .outfit-card.selected{border-color:var(--prop);box-shadow:0 0 0 2px var(--prop-light);}
   .outfit-img-wrap{aspect-ratio:3/4;background:#f0f0ec;display:flex;align-items:center;justify-content:center;overflow:hidden;}
   .outfit-img-wrap img{width:100%;height:100%;object-fit:cover;}
@@ -76,7 +78,9 @@
   .outfit-slides{display:flex;height:100%;transition:transform .3s ease;will-change:transform;}
   .outfit-slide{min-width:100%;width:100%;height:100%;flex-shrink:0;overflow:hidden;}
   .outfit-slide img{width:100%;height:100%;object-fit:cover;display:block;}
-  .outfit-label-text{padding:6px 8px;font-size:11px;color:var(--dark);background:var(--warm-white);text-align:center;line-height:1.4;word-break:break-all;}
+  .outfit-label-text{padding:10px 12px 14px;background:var(--warm-white);text-align:left;word-break:break-word;}
+  .outfit-label-name{font-size:12px;font-weight:500;color:var(--dark);line-height:1.5;letter-spacing:0.03em;display:block;margin-bottom:3px;}
+  .outfit-label-text .outfit-note{font-size:10px;font-weight:300;color:var(--muted);line-height:1.7;display:block;letter-spacing:0.02em;}
   .outfit-check{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:2px solid white;background:transparent;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;transition:all .2s;}
   .outfit-card.selected .outfit-check{background:var(--prop);border-color:var(--prop);}
   .outfit-count-badge{position:absolute;top:6px;left:6px;width:20px;height:20px;border-radius:50%;background:var(--prop);color:white;font-size:10px;font-weight:500;display:none;align-items:center;justify-content:center;}
@@ -301,6 +305,7 @@
 </style>
 </head>
 <body>
+<div style="position:sticky;top:0;z-index:9999;background:#c0392b;color:#fff;text-align:center;font-size:12px;font-weight:700;padding:5px 8px;letter-spacing:.05em;">🧪 テスト環境（本番ではありません）</div>
 <div class="sending-overlay" id="sending-overlay">
   <div class="spinner"></div>
   <div class="sending-text" id="sending-text">送信中です…</div>
@@ -370,7 +375,19 @@
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbyHmIOngJdGPzVP8uuZCZddsnBVO1xyZP0HZRNPibx4bCK9aPgWU5g9Crd6BspMxPzB/exec';
+// ▼▼ テスト用GASをデプロイして発行されたURL（…/exec）に置き換えてください。本番のURLは入れないこと ▼▼
+const API='https://script.google.com/macros/s/AKfycbxcNDfB47fzrCMy2DpMvVN_IKodfUfLbZl0AbvhYX7pHeE3-Y_AvWmOn3RYYOvMkjQ/exec';
+// 花束セクションで選んでもらうアイテム（社内発注フォームと同じ内容）
+const FLOWER_ITEMS=['生花ミニブーケ 5,500円（税込）','生花アレンジ（2個） 27,500円（税込）','造花アレンジ（2個）＋ミニブーケ 16,500円（税込）','造花ミニブーケ 3,300円（税込）'];
+// ★造花の種類（複数選択可）。【仮】Simple 以外の選択肢は、実際のフォームの内容に合わせて追加してください
+const ART_ARRANGE_OPTIONS=['Simple'];
+const ART_MINI_OPTIONS=['Simple'];
+// 選んだアイテムによって、どの「造花の種類」を出すか決める
+function artNeeds(item){const it=item||'';return{arrange:/造花アレンジ/.test(it),mini:/造花/.test(it)&&/ミニブーケ/.test(it)};}
+const ORDER_SOURCES=['iliy大阪','iliy東京'];
+const ORDER_THEMES=['マタニティ','お宮参り','ハーフバースデー','1歳BD','2歳BD','3歳七五三','5歳七五三','7歳七五三','家族写真','その他'];
+const ORDER_DELIVERY=['大阪スタジオへ搬入','ヤマト営業所止め（発送）','東京スタジオへ発送'];
+const escH=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const CATEGORIES=['80cm','90cm','100cm','マタニティ'];
 
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
@@ -453,6 +470,18 @@ async function initClient(id){
 
 async function renderSelector(){
   if(!settingsLoaded)await loadSettings();
+  // 前回の選択を復元するためのデフォルト値を取得
+  // 送信済みの場合は送信済みの選択を強制
+  const prevFlower=sectionStatus.flower?'花束を注文している':
+    customer.flowerOption&&customer.flowerOption!=='none'?'花束を注文している':
+    (customer.flowerOption==='none'&&(sectionStatus.hair||sectionStatus.outfitChosen))?'花束を注文していない':'';
+  const prevHair=sectionStatus.hair?
+    (customer.hairOption==='female'?'女性ヘアセット＆メイク':customer.hairOption==='male'?'男性ヘアセット':customer.hairOption==='both'?'両方（女性＋男性）':'ヘアメイクなし'):
+    customer.hairOption==='female'?'女性ヘアセット＆メイク':customer.hairOption==='male'?'男性ヘアセット':customer.hairOption==='both'?'両方（女性＋男性）':
+    (customer.hairOption==='none'&&(sectionStatus.flower||sectionStatus.outfitChosen))?'ヘアメイクなし':'';
+  const prevOutfit=sectionStatus.outfit?'衣装レンタルを利用する':
+    sectionStatus.outfitChosen?'衣装レンタルを利用する':
+    sectionStatus.outfitNotNeeded?'衣装レンタルは利用しない':'';
   updateProgressEmpty();
   const m=document.getElementById('form-main');
   m.innerHTML=`<div class="fade-in">
@@ -461,29 +490,31 @@ async function renderSelector(){
     <div class="field">
       <label>花束オプション<span class="req">必須</span>${SETTINGS.flower_detail?`<button type="button" onclick="showOptionDetail('flower')" style="margin-left:8px;padding:2px 10px;background:var(--flower-light);border:1px solid var(--flower-border);border-radius:10px;font-family:'Noto Sans JP',sans-serif;font-size:10px;color:var(--flower);cursor:pointer;">詳細を見る</button>`:''}
       </label>
-      ${rg('has-flower',['花束を注文している','花束を注文していない'],'col1',sectionStatus.flower)}
+      ${rg('has-flower',['花束を注文している','花束を注文していない'],'col1',sectionStatus.flower,prevFlower,sectionStatus.flower)}
       <div class="error-msg" id="err-flower">選択してください</div>
     </div>
     <div class="field">
       <label>ヘアメイクオプション<span class="req">必須</span>${SETTINGS.hair_detail?`<button type="button" onclick="showOptionDetail('hair')" style="margin-left:8px;padding:2px 10px;background:#FBEAF0;border:1px solid #ED93B1;border-radius:10px;font-family:'Noto Sans JP',sans-serif;font-size:10px;color:#993556;cursor:pointer;">詳細を見る</button>`:''}
       </label>
-      ${rg('has-hair',['女性ヘアセット＆メイク','男性ヘアセット','両方（女性＋男性）','ヘアメイクなし'],'col1',sectionStatus.hair)}
+      ${rg('has-hair',['女性ヘアセット＆メイク','男性ヘアセット','両方（女性＋男性）','ヘアメイクなし'],'col1',sectionStatus.hair,prevHair,sectionStatus.hair)}
       <div class="error-msg" id="err-hair">選択してください</div>
     </div>
     <div class="field">
       <label>衣装レンタルオプション<span class="req">必須</span>${SETTINGS.outfit_detail?`<button type="button" onclick="showOptionDetail('outfit')" style="margin-left:8px;padding:2px 10px;background:var(--prop-light);border:1px solid var(--prop-border);border-radius:10px;font-family:'Noto Sans JP',sans-serif;font-size:10px;color:var(--prop);cursor:pointer;">詳細を見る</button>`:''}
       </label>
-      ${rg('has-outfit',['衣装レンタルを利用する','衣装レンタルは利用しない'],'col1',sectionStatus.outfit)}
+      ${rg('has-outfit',['衣装レンタルを利用する','衣装レンタルは利用しない'],'col1',sectionStatus.outfit,prevOutfit,sectionStatus.outfit||sectionStatus.outfitChosen||sectionStatus.outfitNotNeeded)}
       <div class="error-msg" id="err-outfit">選択してください</div>
     </div>
     <div class="nav"><button class="btn-back" onclick="renderCommon()">← 戻る</button><button class="btn-next" onclick="startSections()">次へ　→</button></div>
   </div>`;
 }
 
-function rg(name,opts,col,locked){
+function rg(name,opts,col,locked,prevVal,hardLock){
+  // hardLock: 送信済みのためoperations全体をロック（変更不可）
+  const isLocked=locked||hardLock;
   const note=locked?'<span style="color:var(--success);font-size:11px;margin-left:6px">✓ 送信済み</span>':'';
-  return note+`<div class="radio-grid ${col||''}" style="${locked?'opacity:.5;pointer-events:none;':''}">`+
-    opts.map(o=>`<label class="choice-card"><input type="radio" name="${name}" value="${o}"${locked?' disabled':''}><div class="choice-label"><div class="choice-dot"></div>${o}</div></label>`).join('')+'</div>';
+  return note+`<div class="radio-grid ${col||''}" style="${isLocked?'opacity:.6;pointer-events:none;':''}">`+
+    opts.map(o=>`<label class="choice-card"><input type="radio" name="${name}" value="${o}"${isLocked?' disabled':''}${(isLocked||!locked)&&prevVal===o?' checked':''}><div class="choice-label"><div class="choice-dot"></div>${o}</div></label>`).join('')+'</div>';
 }
 
 async function startSections(){
@@ -497,13 +528,26 @@ async function startSections(){
   if(!hair&&!sectionStatus.hair)show('err-hair');else hide('err-hair');
   if(!outfit&&!sectionStatus.outfit)show('err-outfit');else hide('err-outfit');
   if(!ok)return;
+
+  // 送信済みセクションがあるのに「利用しない」に変更しようとした場合はブロック
+  if(sectionStatus.flower&&flower==='花束を注文していない'){
+    alert('花束はすでに回答済みのため変更できません。');return;
+  }
+  if(sectionStatus.hair&&(hair==='ヘアメイクなし')){
+    alert('ヘアメイクはすでに回答済みのため変更できません。');return;
+  }
+  if(sectionStatus.outfit&&outfit==='衣装レンタルは利用しない'){
+    alert('衣装レンタルはすでに回答済みのため変更できません。');return;
+  }
   // オプション内容をGASのcustomersシートに保存
   const flowerOpt=flower==='花束を注文している'?'flower':'none';
   const hairOpt=hair==='女性ヘアセット＆メイク'?'female':hair==='男性ヘアセット'?'male':hair==='両方（女性＋男性）'?'both':'none';
+  const outfitOpt=outfit==='衣装レンタルを利用する'?'outfit':'none';
   try{
-    await apiPost({action:'updateOptions',cid,flowerOption:flowerOpt,hairOption:hairOpt});
+    await apiPost({action:'updateOptions',cid,flowerOption:flowerOpt,hairOption:hairOpt,outfitOption:outfitOpt});
     customer.flowerOption=flowerOpt;
     customer.hairOption=hairOpt;
+    customer.outfitOption=outfitOpt;
   }catch(e){console.warn('updateOptions failed:',e);}
 
   sectionsToFill=[];
@@ -525,11 +569,19 @@ async function startSections(){
 // ── 共通情報（最初に表示）──
 function renderCommon(){
   updateProgressEmpty();
+  // 全対象外の場合も完了画面を表示（再回答させない）
+  if(sectionStatus.allNotNeeded){
+    document.getElementById('form-main').innerHTML=`<div class="thankyou"><div class="thankyou-icon">✓</div><h2>ご回答ありがとうございます</h2><p>今回はオプションのご利用はないことを確認しました。<br><br>当日お会いできるのを楽しみにしております。</p></div>`;
+    return;
+  }
   // 全セクション完了チェック（お客様が選んだオプションに基づく）
   const needsFlower=customer.flowerOption&&customer.flowerOption!=='none';
   const needsHair=customer.hairOption&&customer.hairOption!=='none';
-  const allDone=(!needsFlower||sectionStatus.flower)&&(!needsHair||sectionStatus.hair)&&sectionStatus.outfit;
-  if(allDone&&(needsFlower||needsHair||sectionStatus.outfit)){
+  // 衣装: 回答済み or 不要選択 or 他のオプション回答済みで衣装未選択→完了とみなす
+  const outfitDone=sectionStatus.outfit||sectionStatus.outfitNotNeeded||
+    (!sectionStatus.outfitChosen&&!sectionStatus.outfit&&(needsFlower||needsHair)&&(sectionStatus.flower||sectionStatus.hair));
+  const allDone=(!needsFlower||sectionStatus.flower)&&(!needsHair||sectionStatus.hair)&&outfitDone;
+  if(allDone&&(needsFlower||needsHair||sectionStatus.outfit||outfitDone)){
     document.getElementById('form-main').innerHTML=`<div class="thankyou"><div class="thankyou-icon">✓</div><h2>すべての回答が完了しています</h2><p>${(SETTINGS.complete_message||'ご回答ありがとうございます。<br>当日お会いできるのを楽しみにしております。')}</p></div>`;
     return;
   }
@@ -579,8 +631,14 @@ async function renderFlower(){
       <div class="error-msg" id="err-fl-mood">選択してください</div>
     </div>
     <div class="field">
-      <label>雰囲気の補足・その他ご希望<span class="opt">任意</span></label>
-      <textarea id="fl-note" placeholder="例：淡いピンク系が好き、グリーンを入れてほしい など">${flowerData.note||''}</textarea>
+      <label>アイテム<span class="req">必須</span></label>
+      <div class="radio-grid col1">${FLOWER_ITEMS.map(o=>`<label class="choice-card"><input type="radio" name="fl-item" value="${escH(o)}"${flowerData.item===o?' checked':''} onchange="renderArtFields()"><div class="choice-label"><div class="choice-dot"></div>${escH(o)}</div></label>`).join('')}</div>
+      <div class="error-msg" id="err-fl-item">選択してください</div>
+    </div>
+    <div id="fl-art-wrap"></div>
+    <div class="field">
+      <label>備考<span class="opt">任意</span></label>
+      <textarea id="fl-note" placeholder="">${escH(flowerData.note||'')}</textarea>
     </div>
     <div class="nav"><button class="btn-back" onclick="renderSelector()">← 戻る</button><button class="btn-next" onclick="goFlower()">次へ　→</button></div>
   </div>`;
@@ -598,22 +656,48 @@ async function renderFlower(){
     <div class="confirm-block"><div class="confirm-block-title flower">花束ご要望</div>
       <div class="confirm-row"><div class="confirm-key">お名前</div><div class="confirm-val">${commonData.name}</div></div>
       <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${fmtD(commonData.shootDate)}</div></div>
-      <div class="confirm-row"><div class="confirm-key">雰囲気</div><div class="confirm-val">${flowerData.mood||''}</div></div>
-      ${flowerData.note?`<div class="confirm-row"><div class="confirm-key">補足</div><div class="confirm-val">${flowerData.note}</div></div>`:''}
+      <div class="confirm-row"><div class="confirm-key">雰囲気</div><div class="confirm-val">${escH(flowerData.mood||'')}</div></div>
+      <div class="confirm-row"><div class="confirm-key">アイテム</div><div class="confirm-val">${escH(flowerData.item||'')}</div></div>
+      ${(flowerData.artArrange||[]).length?`<div class="confirm-row"><div class="confirm-key">造花の種類（アレンジ）</div><div class="confirm-val">${escH(flowerData.artArrange.join('、'))}</div></div>`:''}
+      ${(flowerData.artMini||[]).length?`<div class="confirm-row"><div class="confirm-key">造花の種類（ミニブーケ）</div><div class="confirm-val">${escH(flowerData.artMini.join('、'))}</div></div>`:''}
+      ${flowerData.note?`<div class="confirm-row"><div class="confirm-key">備考</div><div class="confirm-val">${escH(flowerData.note)}</div></div>`:''}
       <div class="confirm-row"><div class="confirm-key">普段の写真</div><div class="confirm-val">${PS['fl-person'].length}枚</div></div>
       <div class="confirm-row"><div class="confirm-key">衣装写真</div><div class="confirm-val">${PS['fl-outfit'].length}枚</div></div>
     </div>
     <div class="nav"><button class="btn-back" onclick="currentStep--;renderFlower()">← 戻る</button><button class="btn-submit" id="btn-submit" onclick="submitSection('flower')">送信する</button></div>
   </div>`;
   window.scrollTo({top:0,behavior:'smooth'});
+  if(s==='fl-main')renderArtFields();
   ['fl-person','fl-outfit'].forEach(k=>renderPreviews(k));
+}
+// アイテムに応じて「造花の種類」（複数選択可）を表示する
+function renderArtFields(){
+  const wrap=document.getElementById('fl-art-wrap');if(!wrap)return;
+  const item=document.querySelector('input[name="fl-item"]:checked')?.value||flowerData.item||'';
+  const need=artNeeds(item);
+  const keep=(n,fb)=>document.querySelector('input[name="'+n+'"]')?[...document.querySelectorAll('input[name="'+n+'"]:checked')].map(e=>e.value):(fb||[]);
+  const selA=keep('fl-art-a',flowerData.artArrange),selM=keep('fl-art-m',flowerData.artMini);
+  const block=(name,label,opts,sel,errId)=>`<div class="field"><label>${label}<span class="req">必須</span><span class="opt" style="margin-left:6px">複数選択可</span></label>
+    <div class="radio-grid col1">${opts.map(o=>`<label class="choice-card chk"><input type="checkbox" name="${name}" value="${escH(o)}"${sel.includes(o)?' checked':''}><div class="choice-label"><div class="choice-dot"></div>${escH(o)}</div></label>`).join('')}</div>
+    <div class="error-msg" id="${errId}">1つ以上選択してください</div></div>`;
+  wrap.innerHTML=(need.arrange?block('fl-art-a','造花の種類（アレンジ）',ART_ARRANGE_OPTIONS,selA,'err-fl-art-a'):'')+(need.mini?block('fl-art-m','造花の種類（ミニブーケ）',ART_MINI_OPTIONS,selM,'err-fl-art-m'):'');
 }
 function goFlower(){
   if(currentStep===0){
     flowerData.mood=document.querySelector('input[name="fl-mood"]:checked')?.value||flowerData.mood||'';
     flowerData.note=document.getElementById('fl-note')?.value||'';
-    if(!flowerData.mood){document.getElementById('err-fl-mood')?.classList.add('show');return;}
-    document.getElementById('err-fl-mood')?.classList.remove('show');
+    flowerData.item=document.querySelector('input[name="fl-item"]:checked')?.value||flowerData.item||'';
+    const need=artNeeds(flowerData.item);
+    const chk=n=>[...document.querySelectorAll('input[name="'+n+'"]:checked')].map(e=>e.value);
+    flowerData.artArrange=need.arrange?chk('fl-art-a'):[];
+    flowerData.artMini=need.mini?chk('fl-art-m'):[];
+    const moodNg=!flowerData.mood,itemNg=!flowerData.item;
+    const artANg=need.arrange&&!flowerData.artArrange.length,artMNg=need.mini&&!flowerData.artMini.length;
+    document.getElementById('err-fl-mood')?.classList.toggle('show',moodNg);
+    document.getElementById('err-fl-item')?.classList.toggle('show',itemNg);
+    document.getElementById('err-fl-art-a')?.classList.toggle('show',artANg);
+    document.getElementById('err-fl-art-m')?.classList.toggle('show',artMNg);
+    if(moodNg||itemNg||artANg||artMNg)return;
   }
   currentStep++;renderFlower();
 }
@@ -787,7 +871,7 @@ async function renderOutfit(){
   _outfitAnimate=true;
   updateProgressFlow('outfit');
   const m=document.getElementById('form-main');
-  m.innerHTML=`<div class="${_outfitAnimate?'fade-in':''}">
+  m.innerHTML=`<div>
     <div class="section-badge outfit">👗 衣装レンタル</div>
     <div class="page-heading">衣装の選択</div>
     <div style="padding:40px 0;text-align:center;color:var(--muted);font-size:13px">衣装データを読み込み中…</div>
@@ -828,19 +912,19 @@ function renderOutfitContent(){
                 <button class="slider-btn prev" onclick="event.stopPropagation();slideOutfit('${o.id}',-1,${JSON.stringify([o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])].filter(Boolean)).length})">‹</button>
                 <button class="slider-btn next" onclick="event.stopPropagation();slideOutfit('${o.id}',1,${JSON.stringify([o.img,...(o.imgs?o.imgs.split(',').filter(x=>x):[])].filter(Boolean)).length})">›</button>`:''})()}
             </div>
-            <div class="outfit-label-text" onclick="toggleOutfit('${o.id}')" style="cursor:pointer;user-select:none;">${o.name}${o.note?`<div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">${o.note}</div>`:''}</div>
+            <div class="outfit-label-text" onclick="toggleOutfit('${o.id}')" style="cursor:pointer;user-select:none;"><span class="outfit-label-name">${o.name}</span>${o.note?`<span class="outfit-note">${o.note}</span>`:''}</div>
             <div class="outfit-check" onclick="toggleOutfit('${o.id}')" style="cursor:pointer;">✓</div>
             <div class="outfit-count-badge" id="ob-${o.id}">${outfitData.selected.indexOf(o.id)+1}</div>
           </div>`).join('')}</div>`
       }
     </div>
 
-    ${outfitData.selected.length>0?`<div class="field">
-      <label>選択中の衣装（${outfitData.selected.length}着）</label>
+    <div id="selected-chips" ${outfitData.selected.length===0?'style="display:none"':''} class="field">
+      <label class="chips-label">選択中の衣装（${outfitData.selected.length}着）</label>
       <div class="selected-outfits">
         ${outfitData.selected.map((id,i)=>{const o=OUTFITS.find(x=>x.id===id);return o?`<div class="selected-outfit-chip">${o.name}</div>`:''}).join('')}
       </div>
-    </div>`:''}
+    </div>
 
     <div class="field">
       <label>補足メモ<span class="opt">任意</span></label>
@@ -878,14 +962,42 @@ function switchCategory(cat){
 }
 
 function toggleOutfit(id){
-  const scrollY=window.scrollY;
   const idx=outfitData.selected.indexOf(id);
   if(idx>=0){outfitData.selected.splice(idx,1);}
   else{outfitData.selected.push(id);}
   outfitData.memo=document.getElementById('outfit-memo')?.value||outfitData.memo||'';
-  _outfitAnimate=false; // 選択時はアニメーションなし
-  renderOutfitContent();
-  requestAnimationFrame(()=>window.scrollTo(0,scrollY));
+
+  // DOMを直接更新（再レンダリングなし）
+  const card=document.getElementById('oc-'+id);
+  if(card){
+    const isSelected=outfitData.selected.includes(id);
+    card.classList.toggle('selected',isSelected);
+  }
+
+  // 選択中バッジを更新
+  outfitData.selected.forEach((sid,i)=>{
+    const badge=document.getElementById('ob-'+sid);
+    if(badge)badge.textContent=i+1;
+  });
+
+  // 選択済みチップエリアを更新
+  const chipsWrap=document.getElementById('selected-chips');
+  if(chipsWrap){
+    if(outfitData.selected.length===0){
+      chipsWrap.style.display='none';
+    } else {
+      chipsWrap.style.display='';
+      const label=chipsWrap.querySelector('.chips-label');
+      if(label)label.textContent=`選択中の衣装（${outfitData.selected.length}着）`;
+      const chips=chipsWrap.querySelector('.selected-outfits');
+      if(chips){
+        chips.innerHTML=outfitData.selected.map(sid=>{
+          const o=OUTFITS.find(x=>x.id===sid);
+          return o?`<div class="selected-outfit-chip">${o.name}</div>`:'';
+        }).join('');
+      }
+    }
+  }
 }
 
 function confirmOutfit(){
@@ -1069,7 +1181,9 @@ function isAllAnswered(c){
   if(c.completed)return true;
   const needsFlower=c.flowerOption&&c.flowerOption!=='none';
   const needsHair=c.hairOption&&c.hairOption!=='none';
-  return(!needsFlower||ss.flower)&&(!needsHair||ss.hair)&&ss.outfit;
+  // 衣装: 利用する選択→回答済み、または利用しない選択→対象外どちらもOK
+  const outfitDone=ss.outfit||ss.outfitNotNeeded||(!ss.outfitChosen&&!ss.outfit&&(needsFlower||needsHair)&&(ss.flower||ss.hair));
+  return(!needsFlower||ss.flower)&&(!needsHair||ss.hair)&&outfitDone;
 }
 function getAlertDays(){return parseInt(SETTINGS.alert_days||'7',10);}
 function isUrgent(c){
@@ -1099,6 +1213,15 @@ function showAdminDash(){
         <div class="create-field"><label>お客様名<span style="color:var(--error)">必須</span></label><input type="text" id="new-name" placeholder="山田 花子"></div>
         <div class="create-field"><label>撮影日<span style="color:var(--error)">必須</span></label><input type="date" id="new-date"></div>
       </div>
+      <div style="font-size:11px;color:var(--muted);margin:10px 0 6px">▼ rih発注フォームの転記用（お客様には表示されません）</div>
+      <div class="create-fields">
+        <div class="create-field"><label>発注者（お名前）<span style="color:var(--error)">必須</span></label><input type="text" id="new-orderer" placeholder="担当者の名前"></div>
+        <div class="create-field"><label>発注元<span style="color:var(--error)">必須</span></label><select id="new-source">${ORDER_SOURCES.map(o=>`<option>${o}</option>`).join('')}</select></div>
+        <div class="create-field"><label>撮影時間<span style="color:var(--error)">必須</span></label><input type="text" id="new-time" placeholder="10:00〜"></div>
+        <div class="create-field"><label>管理番号<span style="color:var(--error)">必須</span></label><input type="text" id="new-mgmt" placeholder="ファミリーフォトの管理番号"></div>
+        <div class="create-field"><label>撮影テーマ<span style="color:var(--error)">必須</span></label><select id="new-theme">${ORDER_THEMES.map(o=>`<option>${o}</option>`).join('')}</select></div>
+        <div class="create-field"><label>受渡方法<span style="color:var(--error)">必須</span></label><select id="new-delivery">${ORDER_DELIVERY.map(o=>`<option>${o}</option>`).join('')}</select></div>
+      </div>
       <button class="btn-create" onclick="createCustomer()">URLを発行する</button>
       <div class="created-url-box" id="created-url-box">
         <div style="font-size:11px;color:var(--muted);margin-bottom:6px">お客様に送るURL：</div>
@@ -1116,6 +1239,7 @@ function resetCreateForm(){
   document.getElementById('created-url-box').classList.remove('show');
   document.getElementById('new-name').value='';
   document.getElementById('new-date').value='';
+  ['new-orderer','new-time','new-mgmt'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
   document.getElementById('created-url-text').textContent='';
 }
 async function createCustomer(){
@@ -1123,13 +1247,16 @@ async function createCustomer(){
   const shootDate=document.getElementById('new-date')?.value;
   if(!name){alert('お客様名を入力してください');return;}
   if(!shootDate){alert('撮影日を入力してください');return;}
+  const gv=i=>(document.getElementById(i)?.value||'').trim();
+  const orderInfo={orderer:gv('new-orderer'),source:gv('new-source'),shootTime:gv('new-time'),mgmtNo:gv('new-mgmt'),theme:gv('new-theme'),delivery:gv('new-delivery')};
+  if(!orderInfo.orderer||!orderInfo.shootTime||!orderInfo.mgmtNo){alert('発注者・撮影時間・管理番号を入力してください');return;}
   try{
-    const r=await adminPost({action:'createCustomer',name,shootDate,flowerOption:'none',hairOption:'none'});
+    const r=await adminPost({action:'createCustomer',name,shootDate,flowerOption:'none',hairOption:'none',...orderInfo});
     if(!r.ok)throw new Error(r.error);
     const url=location.origin+location.pathname+'?cid='+r.cid;
     document.getElementById('created-url-text').textContent=url;
     document.getElementById('created-url-box').classList.add('show');
-    allCustomers.unshift({id:r.cid,name,shootDate,flowerOption:'none',hairOption:'none',sectionSentStatus:{},completed:false,copiedSections:{},createdAt:new Date().toString()});
+    allCustomers.unshift({id:r.cid,name,shootDate,orderInfo,flowerOption:'none',hairOption:'none',sectionSentStatus:{},completed:false,copiedSections:{},createdAt:new Date().toString()});
     document.getElementById('admin-sub').textContent='全'+allCustomers.length+'件';
   }catch(e){alert('URL発行に失敗しました。');}
 }
@@ -1181,7 +1308,7 @@ function buildAdminCard(c){
   const needsFlower=c.flowerOption&&c.flowerOption!=='none';
   const needsHair=c.hairOption&&c.hairOption!=='none';
   // お客様がまだオプション選択していない場合（sectionSentStatusが全て空）は全項目「未回答」
-  const noAnswerYet=!ss.flower&&!ss.hair&&!ss.outfit&&!ss.allNotNeeded;
+  const noAnswerYet=!ss.flower&&!ss.hair&&!ss.outfit&&!ss.outfitChosen&&!ss.outfitNotNeeded&&!ss.allNotNeeded;
   // 全オプション対象外（花束なし・ヘアメイクなし・衣装も不要）の場合はURL非表示
   const allNotNeeded=ss.allNotNeeded===true;
   const badge=allNotNeeded?'<span style="display:inline-block;background:#E8E0D5;color:#7A7570;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">全対象外</span>':answered&&!c.completed?'<span class="badge-new">全回答済</span>':c.completed?'':!answered?'<span style="display:inline-block;background:#FEF3E2;color:#A05C00;border:1px solid #F5C26B;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">回答待ち</span>':'';
@@ -1198,14 +1325,15 @@ function buildAdminCard(c){
       <div class="admin-card-meta">撮影日：${fmtD(c.shootDate)}　発行：${fmtDT(c.createdAt)}</div>
     </div>
     <div class="admin-card-body">
+      ${c.orderInfo&&c.orderInfo.mgmtNo?`<div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.7">発注者：${escH(c.orderInfo.orderer)}（${escH(c.orderInfo.source)}）／ 管理番号：${escH(c.orderInfo.mgmtNo)} ／ ${escH(c.orderInfo.shootTime)} ／ ${escH(c.orderInfo.theme)} ／ ${escH(c.orderInfo.delivery)}</div>`:''}
       <div style="margin-bottom:14px">
         ${secSt('flower','🌷 花束',needsFlower)}
         ${secSt('hair','💄 ヘアメイク',needsHair)}
-        ${secSt('outfit','👗 衣装レンタル',noAnswerYet||ss.outfit)}
+        ${secSt('outfit','👗 衣装レンタル',noAnswerYet||ss.outfit||ss.outfitChosen)}
       </div>
       ${(!allNotNeeded&&(noAnswerYet||needsFlower||needsHair||ss.outfit))?`<div class="section-urls">
         <div class="section-urls-title">担当者への共有URL</div>
-        ${(noAnswerYet?['flower','hair','outfit']:[needsFlower?'flower':null,needsHair?'hair':null,ss.outfit?'outfit':null].filter(Boolean)).map(sec=>{
+        ${(noAnswerYet?['flower','hair','outfit']:[needsFlower?'flower':null,needsHair?'hair':null,(ss.outfit||ss.outfitChosen)?'outfit':null].filter(Boolean)).map(sec=>{
           const lb={flower:'🌷 花束担当者',hair:'💄 ヘアメイク担当者',outfit:'👗 衣装担当者'};
           const url=`${base}?sid=${c.id}&section=${sec}`;
           const wasCopied=copied[sec];
@@ -1232,6 +1360,23 @@ function buildAdminCard(c){
   </div>`;
 }
 
+async function resetAllOptions(cid,btn){
+  if(!confirm('全てのオプションをリセットします。\nお客様が最初からやり直せるようになります。'))return;
+  btn.disabled=true;btn.textContent='処理中…';
+  try{
+    const r=await adminPost({action:'resetAllOptions',cid});
+    if(r.ok){
+      const cx=allCustomers.find(x=>x.id===cid);
+      if(cx){
+        cx.sectionSentStatus={};
+        cx.flowerOption='none';
+        cx.hairOption='none';
+      }
+      alert('リセットしました。お客様に再度URLを送ってください。');
+      showAdminList(cx?.completed?'done':'pending');
+    }else{alert('リセットに失敗しました：'+(r.error||''));}
+  }catch(e){alert('エラーが発生しました。');}
+}
 async function resetSection(cid,section,btn){
   if(!confirm(`「${section==='flower'?'花束':section==='hair'?'ヘアメイク':'衣装'}」の回答をリセットしますか？\nお客様が再回答できるようになります。`))return;
   btn.disabled=true;btn.textContent='処理中…';
@@ -1294,8 +1439,11 @@ async function loadDetail(id){
         <div class="admin-grid">
           <div><div class="admin-fl">お名前</div>${d.flower.name||''}</div>
           <div><div class="admin-fl">撮影日</div>${fmtD(d.flower.shootDate)}</div>
-          <div><div class="admin-fl">雰囲気</div>${d.flower.mood||''}</div>
-          ${d.flower.note?`<div><div class="admin-fl">補足</div>${d.flower.note}</div>`:''}
+          <div><div class="admin-fl">雰囲気</div>${escH(d.flower.mood)}</div>
+          ${d.flower.item?`<div><div class="admin-fl">アイテム</div>${escH(d.flower.item)}</div>`:''}
+          ${d.flower.artArrange?`<div><div class="admin-fl">造花の種類（アレンジ）</div>${escH(d.flower.artArrange)}</div>`:''}
+          ${d.flower.artMini?`<div><div class="admin-fl">造花の種類（ミニブーケ）</div>${escH(d.flower.artMini)}</div>`:''}
+          ${d.flower.note?`<div><div class="admin-fl">備考</div>${escH(d.flower.note)}</div>`:''}
         </div>`;
       h+=photoRow('撮影者の写真',d.flower.personImages);
       h+=photoRow('衣装写真',d.flower.outfitImages);
@@ -1355,6 +1503,7 @@ async function loadDetail(id){
         ${d.flower?`<button onclick="resetSection('${id}','flower',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">🌷 花束をリセット</button>`:''}
         ${d.hair?`<button onclick="resetSection('${id}','hair',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">💄 ヘアをリセット</button>`:''}
         ${d.outfit?`<button onclick="resetSection('${id}','outfit',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--error);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--error);cursor:pointer;">👗 衣装をリセット</button>`:''}
+        <button onclick="resetAllOptions('${id}',this)" style="padding:8px 12px;background:transparent;border:1px solid var(--muted);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;">🔄 全てリセット（対象外も解消）</button>
       </div>
 
     </div>`;
@@ -1445,8 +1594,11 @@ async function initSalon(id,section){
       body+=`<div class="salon-section"><div class="salon-sec-title flower">🌷 花束ご要望</div><div class="salon-grid">
         <div><div class="salon-fl">お名前</div><div class="salon-fv">${d.flower.name||''}</div></div>
         <div><div class="salon-fl">撮影日</div><div class="salon-fv">${fmtD(d.flower.shootDate)}</div></div>
-        <div><div class="salon-fl">雰囲気</div><div class="salon-fv">${d.flower.mood||''}</div></div>
-        ${d.flower.note?`<div><div class="salon-fl">補足</div><div class="salon-fv">${d.flower.note}</div></div>`:''}
+        <div><div class="salon-fl">雰囲気</div><div class="salon-fv">${escH(d.flower.mood)}</div></div>
+        ${d.flower.item?`<div><div class="salon-fl">アイテム</div><div class="salon-fv">${escH(d.flower.item)}</div></div>`:''}
+        ${d.flower.artArrange?`<div><div class="salon-fl">造花の種類（アレンジ）</div><div class="salon-fv">${escH(d.flower.artArrange)}</div></div>`:''}
+        ${d.flower.artMini?`<div><div class="salon-fl">造花の種類（ミニブーケ）</div><div class="salon-fv">${escH(d.flower.artMini)}</div></div>`:''}
+        ${d.flower.note?`<div><div class="salon-fl">備考</div><div class="salon-fv">${escH(d.flower.note)}</div></div>`:''}
       </div></div>`;
       body+=pSec('撮影者の普段の様子',d.flower.personImages,'flower');
       body+=pSec('衣装写真',d.flower.outfitImages,'flower');
