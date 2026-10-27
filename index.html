@@ -1309,8 +1309,10 @@ function showAdminDash(){
   if(urgentItems.length>0){
     urgentHtml=`<div class="alert-banner"><div class="alert-banner-title">⚠️ 撮影${getAlertDays()}日以内で要確認のお客様（${urgentItems.length}名）</div>${urgentItems.map(c=>`<div class="alert-item">・${c.name} 様　撮影日：${fmtD(c.shootDate)}</div>`).join('')}</div>`;
   }
+  const errItems=allCustomers.filter(c=>c.transcribeError);
+  const errHtml=errItems.length?`<div class="alert-banner"><div class="alert-banner-title">⚠️ 転記先に書き込めていないお客様（${errItems.length}名）</div>${errItems.map(c=>`<div class="alert-item">・${escH(c.name)} 様　撮影日：${fmtD(c.shootDate)}　（カードの「再転記する」を押してください）</div>`).join('')}</div>`:'';
   document.getElementById('admin-wrap').innerHTML=`
-    ${urgentHtml}
+    ${urgentHtml}${errHtml}
     <div class="create-customer-wrap">
       <div class="create-customer-title">📋 お客様URLの発行</div>
       <div class="create-fields">
@@ -1375,7 +1377,7 @@ async function createCustomer(){
     const url=location.origin+location.pathname+'?cid='+r.cid;
     document.getElementById('created-url-text').textContent=url;
     document.getElementById('created-url-box').classList.add('show');
-    allCustomers.unshift({id:r.cid,name,shootDate,orderInfo,flowerOption:optFlower,hairOption:optHair,sectionSentStatus:{optionsFixed:true,...(optOutfit==='outfit'?{outfitChosen:true}:{outfitNotNeeded:true})},completed:false,copiedSections:{},cancelledAt:'',createdAt:new Date().toString()});
+    allCustomers.unshift({id:r.cid,name,shootDate,orderInfo,flowerOption:optFlower,hairOption:optHair,transcribeError:(r.transcribe&&!r.transcribe.ok)?(r.transcribe.error||'失敗'):'',sectionSentStatus:{optionsFixed:true,...(optOutfit==='outfit'?{outfitChosen:true}:{outfitNotNeeded:true})},completed:false,copiedSections:{},cancelledAt:'',createdAt:new Date().toString()});
     document.getElementById('admin-sub').textContent='全'+allCustomers.length+'件';
     if(r.transcribe&&!r.transcribe.ok)alert('URLは発行しましたが、転記先への書き込みに失敗しました。\n'+(r.transcribe.error||''));
     else transcribeMissingNotice(r);
@@ -1451,6 +1453,7 @@ function buildAdminCard(c){
       <div class="admin-card-meta">撮影日：${fmtD(c.shootDate)}　発行：${fmtDT(c.createdAt)}${cancelled?'　キャンセル：'+escH(c.cancelledAt):''}</div>
     </div>
     <div class="admin-card-body">
+      ${c.transcribeError?`<div style="background:#FDECEA;border:1px solid #E8A0A0;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--error);line-height:1.7">⚠️ <b>転記先への書き込みに失敗しています（未転記）</b><br>${escH(c.transcribeError)}<br><button onclick="retranscribe('${c.id}',this)" style="margin-top:6px;padding:7px 14px;background:var(--error);border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:#fff;cursor:pointer;">再転記する</button></div>`:''}
       ${c.orderInfo&&c.orderInfo.mgmtNo?`<div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.7">発注者：${escH(c.orderInfo.orderer)}（${escH(c.orderInfo.source)}）／ 管理番号：${escH(c.orderInfo.mgmtNo)} ／ ${escH(c.orderInfo.shootTime)} ／ ${escH(c.orderInfo.theme)} ／ ${escH(c.orderInfo.delivery)}</div>`:''}
       ${cancelled?'':`<div style="margin-bottom:12px"><button onclick="toggleEdit('${c.id}')" style="padding:7px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:var(--dark);cursor:pointer;">✏️ 撮影日・発注情報・オプションを変更</button></div><div id="edit-${c.id}"></div>`}
       <div style="margin-bottom:14px">
@@ -1488,6 +1491,20 @@ function buildAdminCard(c){
   </div>`;
 }
 
+// 転記先への書き込みに失敗したお客様を、保存済みのデータから書き直す
+async function retranscribe(id,btn){
+  btn.disabled=true;btn.textContent='転記中…';
+  try{
+    const r=await adminPost({action:'retranscribe',cid:id});
+    if(r.ok){
+      await reloadCustomers();
+      transcribeMissingNotice({transcribe:{ok:true,missing:r.missing}});
+      const cx=allCustomers.find(x=>x.id===id);
+      alert('転記先に書き込みました。');
+      showAdminList(cx&&isDoneC(cx)?'done':'pending');
+    }else{alert('再転記に失敗しました：'+(r.error||'')+'\n転記先のシートの状態（共有設定・見出し）を確認して、もう一度お試しください。');btn.disabled=false;btn.textContent='再転記する';}
+  }catch(e){alert('エラーが発生しました。');btn.disabled=false;btn.textContent='再転記する';}
+}
 async function reloadCustomers(){
   const a=await adminGet({action:'getAllCustomers'});
   if(a.ok)allCustomers=a.data.reverse();
@@ -1621,6 +1638,7 @@ async function saveEdit(id){
     c.name=nf.name;c.shootDate=r.shootDate||nf.shootDate;
     c.orderInfo={orderer:nf.orderer,source:nf.source,shootTime:nf.shootTime,mgmtNo:nf.mgmtNo,theme:nf.theme,delivery:nf.delivery};
     c.flowerOption=optF;c.hairOption=optH;
+    c.transcribeError=(r.transcribe&&!r.transcribe.ok)?(r.transcribe.error||'失敗'):'';
     const nst=c.sectionSentStatus=c.sectionSentStatus||{};
     nst.optionsFixed=true;delete nst.allNotNeeded;delete nst.outfitChosen;delete nst.outfitNotNeeded;
     if(optO==='outfit')nst.outfitChosen=true;else nst.outfitNotNeeded=true;
@@ -1639,6 +1657,7 @@ async function cancelCustomer(id){
     if(!r.ok)throw new Error(r.error);
     const wasDone=isDoneC(c);
     c.cancelledAt=r.cancelledAt;
+    c.transcribeError=(r.transcribe&&!r.transcribe.ok)?(r.transcribe.error||'失敗'):'';
     transcribeMissingNotice(r);
     if(r.transcribe&&!r.transcribe.ok)alert('キャンセルしましたが、転記先への反映に失敗しました。\n'+(r.transcribe.error||''));
     showAdminList(wasDone?'done':'pending');
