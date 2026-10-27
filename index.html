@@ -380,10 +380,10 @@ const API='https://script.google.com/macros/s/AKfycbxcNDfB47fzrCMy2DpMvVN_IKodfU
 // 花束セクションで選んでもらうアイテム（社内発注フォームと同じ内容）
 const FLOWER_ITEMS=['生花ミニブーケ 5,500円（税込）','生花アレンジ（2個） 27,500円（税込）','造花アレンジ（2個）＋ミニブーケ 16,500円（税込）','造花ミニブーケ 3,300円（税込）'];
 // ★造花の種類（複数選択可）。【仮】Simple 以外の選択肢は、実際のフォームの内容に合わせて追加してください
-const ART_ARRANGE_OPTIONS=['Simple'];
-const ART_MINI_OPTIONS=['Simple'];
+const ART_SET_OPTIONS=['Simple','Natural','Cute','Cool','Leave it to rih'];   // 「造花アレンジ（2個）＋ミニブーケ」を選んだ人向け
+const ART_MINI_OPTIONS=['Simple','Natural','Cute','Cool','Leave it to rih'];  // 「造花ミニブーケ」を選んだ人向け
 // 選んだアイテムによって、どの「造花の種類」を出すか決める
-function artNeeds(item){const it=item||'';return{arrange:/造花アレンジ/.test(it),mini:/造花/.test(it)&&/ミニブーケ/.test(it)};}
+function artNeeds(item){const it=item||'';const set=/造花アレンジ/.test(it);return{set,mini:!set&&/造花ミニブーケ/.test(it)};}
 const ORDER_SOURCES=['iliy大阪','iliy東京'];
 const ORDER_THEMES=['マタニティ','お宮参り','ハーフバースデー','1歳BD','2歳BD','3歳七五三','5歳七五三','7歳七五三','家族写真','その他'];
 const ORDER_DELIVERY=['大阪スタジオへ搬入','ヤマト営業所止め（発送）','東京スタジオへ発送'];
@@ -658,7 +658,7 @@ async function renderFlower(){
       <div class="confirm-row"><div class="confirm-key">撮影日</div><div class="confirm-val">${fmtD(commonData.shootDate)}</div></div>
       <div class="confirm-row"><div class="confirm-key">雰囲気</div><div class="confirm-val">${escH(flowerData.mood||'')}</div></div>
       <div class="confirm-row"><div class="confirm-key">アイテム</div><div class="confirm-val">${escH(flowerData.item||'')}</div></div>
-      ${(flowerData.artArrange||[]).length?`<div class="confirm-row"><div class="confirm-key">造花の種類（アレンジ）</div><div class="confirm-val">${escH(flowerData.artArrange.join('、'))}</div></div>`:''}
+      ${(flowerData.artSet||[]).length?`<div class="confirm-row"><div class="confirm-key">造花の種類（アレンジ+ミニブーケ）</div><div class="confirm-val">${escH(flowerData.artSet.join('、'))}</div></div>`:''}
       ${(flowerData.artMini||[]).length?`<div class="confirm-row"><div class="confirm-key">造花の種類（ミニブーケ）</div><div class="confirm-val">${escH(flowerData.artMini.join('、'))}</div></div>`:''}
       ${flowerData.note?`<div class="confirm-row"><div class="confirm-key">備考</div><div class="confirm-val">${escH(flowerData.note)}</div></div>`:''}
       <div class="confirm-row"><div class="confirm-key">普段の写真</div><div class="confirm-val">${PS['fl-person'].length}枚</div></div>
@@ -676,11 +676,11 @@ function renderArtFields(){
   const item=document.querySelector('input[name="fl-item"]:checked')?.value||flowerData.item||'';
   const need=artNeeds(item);
   const keep=(n,fb)=>document.querySelector('input[name="'+n+'"]')?[...document.querySelectorAll('input[name="'+n+'"]:checked')].map(e=>e.value):(fb||[]);
-  const selA=keep('fl-art-a',flowerData.artArrange),selM=keep('fl-art-m',flowerData.artMini);
+  const selA=keep('fl-art-a',flowerData.artSet),selM=keep('fl-art-m',flowerData.artMini);
   const block=(name,label,opts,sel,errId)=>`<div class="field"><label>${label}<span class="req">必須</span><span class="opt" style="margin-left:6px">複数選択可</span></label>
     <div class="radio-grid col1">${opts.map(o=>`<label class="choice-card chk"><input type="checkbox" name="${name}" value="${escH(o)}"${sel.includes(o)?' checked':''}><div class="choice-label"><div class="choice-dot"></div>${escH(o)}</div></label>`).join('')}</div>
     <div class="error-msg" id="${errId}">1つ以上選択してください</div></div>`;
-  wrap.innerHTML=(need.arrange?block('fl-art-a','造花の種類（アレンジ）',ART_ARRANGE_OPTIONS,selA,'err-fl-art-a'):'')+(need.mini?block('fl-art-m','造花の種類（ミニブーケ）',ART_MINI_OPTIONS,selM,'err-fl-art-m'):'');
+  wrap.innerHTML=(need.set?block('fl-art-a','造花の種類（アレンジ+ミニブーケ）',ART_SET_OPTIONS,selA,'err-fl-art-a'):'')+(need.mini?block('fl-art-m','造花の種類（ミニブーケ）',ART_MINI_OPTIONS,selM,'err-fl-art-m'):'');
 }
 function goFlower(){
   if(currentStep===0){
@@ -689,10 +689,10 @@ function goFlower(){
     flowerData.item=document.querySelector('input[name="fl-item"]:checked')?.value||flowerData.item||'';
     const need=artNeeds(flowerData.item);
     const chk=n=>[...document.querySelectorAll('input[name="'+n+'"]:checked')].map(e=>e.value);
-    flowerData.artArrange=need.arrange?chk('fl-art-a'):[];
+    flowerData.artSet=need.set?chk('fl-art-a'):[];
     flowerData.artMini=need.mini?chk('fl-art-m'):[];
     const moodNg=!flowerData.mood,itemNg=!flowerData.item;
-    const artANg=need.arrange&&!flowerData.artArrange.length,artMNg=need.mini&&!flowerData.artMini.length;
+    const artANg=need.set&&!flowerData.artSet.length,artMNg=need.mini&&!flowerData.artMini.length;
     document.getElementById('err-fl-mood')?.classList.toggle('show',moodNg);
     document.getElementById('err-fl-item')?.classList.toggle('show',itemNg);
     document.getElementById('err-fl-art-a')?.classList.toggle('show',artANg);
@@ -1441,7 +1441,7 @@ async function loadDetail(id){
           <div><div class="admin-fl">撮影日</div>${fmtD(d.flower.shootDate)}</div>
           <div><div class="admin-fl">雰囲気</div>${escH(d.flower.mood)}</div>
           ${d.flower.item?`<div><div class="admin-fl">アイテム</div>${escH(d.flower.item)}</div>`:''}
-          ${d.flower.artArrange?`<div><div class="admin-fl">造花の種類（アレンジ）</div>${escH(d.flower.artArrange)}</div>`:''}
+          ${d.flower.artSet?`<div><div class="admin-fl">造花の種類（アレンジ+ミニブーケ）</div>${escH(d.flower.artSet)}</div>`:''}
           ${d.flower.artMini?`<div><div class="admin-fl">造花の種類（ミニブーケ）</div>${escH(d.flower.artMini)}</div>`:''}
           ${d.flower.note?`<div><div class="admin-fl">備考</div>${escH(d.flower.note)}</div>`:''}
         </div>`;
@@ -1596,7 +1596,7 @@ async function initSalon(id,section){
         <div><div class="salon-fl">撮影日</div><div class="salon-fv">${fmtD(d.flower.shootDate)}</div></div>
         <div><div class="salon-fl">雰囲気</div><div class="salon-fv">${escH(d.flower.mood)}</div></div>
         ${d.flower.item?`<div><div class="salon-fl">アイテム</div><div class="salon-fv">${escH(d.flower.item)}</div></div>`:''}
-        ${d.flower.artArrange?`<div><div class="salon-fl">造花の種類（アレンジ）</div><div class="salon-fv">${escH(d.flower.artArrange)}</div></div>`:''}
+        ${d.flower.artSet?`<div><div class="salon-fl">造花の種類（アレンジ+ミニブーケ）</div><div class="salon-fv">${escH(d.flower.artSet)}</div></div>`:''}
         ${d.flower.artMini?`<div><div class="salon-fl">造花の種類（ミニブーケ）</div><div class="salon-fv">${escH(d.flower.artMini)}</div></div>`:''}
         ${d.flower.note?`<div><div class="salon-fl">備考</div><div class="salon-fv">${escH(d.flower.note)}</div></div>`:''}
       </div></div>`;
