@@ -1451,7 +1451,7 @@ function buildAdminCard(c){
     </div>
     <div class="admin-card-body">
       ${c.orderInfo&&c.orderInfo.mgmtNo?`<div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.7">発注者：${escH(c.orderInfo.orderer)}（${escH(c.orderInfo.source)}）／ 管理番号：${escH(c.orderInfo.mgmtNo)} ／ ${escH(c.orderInfo.shootTime)} ／ ${escH(c.orderInfo.theme)} ／ ${escH(c.orderInfo.delivery)}</div>`:''}
-      ${cancelled?'':`<div style="margin-bottom:12px"><button onclick="toggleEdit('${c.id}')" style="padding:7px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:var(--dark);cursor:pointer;">✏️ 撮影日・発注情報を変更</button></div><div id="edit-${c.id}"></div>`}
+      ${cancelled?'':`<div style="margin-bottom:12px"><button onclick="toggleEdit('${c.id}')" style="padding:7px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:var(--dark);cursor:pointer;">✏️ 撮影日・発注情報・オプションを変更</button></div><div id="edit-${c.id}"></div>`}
       <div style="margin-bottom:14px">
         ${secSt('flower','🌷 花束',needsFlower)}
         ${secSt('hair','💄 ヘアメイク',needsHair)}
@@ -1539,10 +1539,20 @@ function toggleEdit(id){
   }
   const o=c.orderInfo||{};
   const sel=(arr,v)=>arr.map(x=>`<option${x===v?' selected':''}>${escH(x)}</option>`).join('');
+  const st=c.sectionSentStatus||{};
+  // 現在のオプション（スタッフ選択済みならその値。古いお客様で未選択なら空＝選んでもらう）
+  const answeredAny=!!(st.flower||st.hair||st.outfit||st.outfitChosen||st.outfitNotNeeded||st.allNotNeeded);
+  const fixed=!!st.optionsFixed;
+  const ov={
+    flower:c.flowerOption==='flower'?'flower':((fixed||answeredAny)?'none':''),
+    hair:(c.hairOption&&c.hairOption!=='none')?c.hairOption:((fixed||answeredAny)?'none':''),
+    outfit:(st.outfit||st.outfitChosen)?'outfit':((fixed||answeredAny)?'none':'')
+  };
+  const optSel=(k,opts,cur,answered)=>`<select id="ed-${k}-${id}"${answered?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${v===cur?' selected':''}>${l}${answered&&v===cur?'（回答済み）':''}</option>`).join('')}</select>`;
   const f=(k,label,html)=>`<div class="create-field"><label>${label}</label>${html}</div>`;
   const inp=(k,v,type)=>`<input type="${type||'text'}" id="ed-${k}-${id}" value="${escH(v)}">`;
   box.innerHTML=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
-    <div style="font-size:12px;font-weight:500;margin-bottom:10px">✏️ 撮影日・発注情報の変更（転記先にも反映されます）</div>
+    <div style="font-size:12px;font-weight:500;margin-bottom:10px">✏️ 撮影日・発注情報・オプションの変更（転記先にも反映されます）</div>
     <div class="create-fields">
       ${f('name','お客様名',inp('name',c.name))}
       ${f('date','撮影日',inp('date',c.shootDate,'date'))}
@@ -1553,6 +1563,12 @@ function toggleEdit(id){
       ${f('theme','撮影テーマ',`<select id="ed-theme-${id}">${sel(ORDER_THEMES,o.theme)}</select>`)}
       ${f('delivery','受渡方法',`<select id="ed-delivery-${id}">${sel(ORDER_DELIVERY,o.delivery)}</select>`)}
     </div>
+    <div style="font-size:11px;color:var(--muted);margin:8px 0 6px">▼ ご利用オプション（回答済みの項目は変更できません）。<b>花束を「あり」にすると、すぐ転記先に行が入ります</b></div>
+    <div class="create-fields">
+      ${f('opt-flower','花束',optSel('opt-flower',[['','選択してください'],['flower','あり'],['none','なし']],ov.flower,!!st.flower))}
+      ${f('opt-hair','ヘアメイク',optSel('opt-hair',[['','選択してください'],['none','なし'],['female','女性ヘアセット＆メイク'],['male','男性ヘアセット'],['both','両方（女性＋男性）']],ov.hair,!!st.hair))}
+      ${f('opt-outfit','衣装レンタル',optSel('opt-outfit',[['','選択してください'],['none','なし'],['outfit','あり']],ov.outfit,!!st.outfit))}
+    </div>
     <div style="display:flex;gap:8px"><button class="btn-create" id="ed-save-${id}" onclick="saveEdit('${id}')">変更を保存する</button><button onclick="toggleEdit('${id}')" style="padding:10px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;">閉じる</button></div>
   </div>`;
 }
@@ -1560,25 +1576,33 @@ async function saveEdit(id){
   const c=allCustomers.find(x=>x.id===id);if(!c)return;
   const gv=k=>(document.getElementById(`ed-${k}-${id}`)?.value||'').trim();
   const nf={name:gv('name'),shootDate:gv('date'),orderer:gv('orderer'),source:gv('source'),shootTime:gv('time'),mgmtNo:gv('mgmt'),theme:gv('theme'),delivery:gv('delivery')};
-  const isFl=c.flowerOption==='flower'||!!(c.sectionSentStatus&&c.sectionSentStatus.flower);
+  const gs=k=>document.getElementById(`ed-${k}-${id}`);
+  const optF=gs('opt-flower')?.value,optH=gs('opt-hair')?.value,optO=gs('opt-outfit')?.value;
+  if(!optF||!optH||!optO){alert('花束・ヘアメイク・衣装レンタルの「あり／なし」を選んでください');return;}
+  const wasFl=c.flowerOption==='flower';
+  const isFl=optF==='flower';
   if(!nf.name||!nf.shootDate||(isFl&&(!nf.orderer||!nf.shootTime||!nf.mgmtNo))){alert(isFl?'お客様名・撮影日・発注者・撮影時間・管理番号は必須です':'お客様名と撮影日は必須です');return;}
   const o=c.orderInfo||{};
   // 日付・発注元・受渡方法を変えたときだけ、受付ルールの注意画面を出す
-  if(nf.shootDate!==c.shootDate||nf.source!==o.source||nf.delivery!==o.delivery){
+  if(isFl&&(nf.shootDate!==c.shootDate||nf.source!==o.source||nf.delivery!==o.delivery||!wasFl)){
     const warns=isFl?checkOrderRules(nf.shootDate,nf.source,nf.delivery):[];
     if(warns.length&&!await noticeDialog({title:'受付できない可能性があります',items:warns,okText:'このまま変更する',cancelText:'戻って修正する'}))return;
   }
   const btn=document.getElementById('ed-save-'+id);if(btn){btn.disabled=true;btn.textContent='保存中…';}
   try{
-    const r=await adminPost({action:'updateOrder',cid:id,...nf});
+    const r=await adminPost({action:'updateOrder',cid:id,...nf,optionsFixed:true,flowerOption:optF,hairOption:optH,outfitOption:optO});
     if(!r.ok){
-      if(r.error==='locked'||r.error==='cancelled')await noticeDialog({title:'変更できません',items:[r.message||'変更できませんでした。'],okText:'閉じる'});
+      if(r.error==='locked'||r.error==='cancelled'||r.error==='answered')await noticeDialog({title:'変更できません',items:[r.message||'変更できませんでした。'],okText:'閉じる'});
       else alert('変更に失敗しました：'+(r.error||''));
       if(btn){btn.disabled=false;btn.textContent='変更を保存する';}
       return;
     }
     c.name=nf.name;c.shootDate=r.shootDate||nf.shootDate;
     c.orderInfo={orderer:nf.orderer,source:nf.source,shootTime:nf.shootTime,mgmtNo:nf.mgmtNo,theme:nf.theme,delivery:nf.delivery};
+    c.flowerOption=optF;c.hairOption=optH;
+    const nst=c.sectionSentStatus=c.sectionSentStatus||{};
+    nst.optionsFixed=true;delete nst.allNotNeeded;delete nst.outfitChosen;delete nst.outfitNotNeeded;
+    if(optO==='outfit')nst.outfitChosen=true;else nst.outfitNotNeeded=true;
     if(r.transcribe&&!r.transcribe.ok)alert('変更は保存しましたが、転記先への反映に失敗しました。\n'+(r.transcribe.error||''));
     else alert('変更しました。転記先にも反映されています。');
     showAdminList(isDoneC(c)?'done':'pending');
