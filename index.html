@@ -378,6 +378,11 @@
 // ▼▼ テスト用GASをデプロイして発行されたURL（…/exec）に置き換えてください。本番のURLは入れないこと ▼▼
 const API='https://script.google.com/macros/s/AKfycbxcNDfB47fzrCMy2DpMvVN_IKodfUfLbZl0AbvhYX7pHeE3-Y_AvWmOn3RYYOvMkjQ/exec';
 // 花束セクションで選んでもらうアイテム（社内発注フォームと同じ内容）
+// 花束オプションの種類：none／fresh（生花）／artificial（造花）／both（両方）。古いデータの 'flower' は「両方」
+const hasFlowerOpt=o=>['fresh','artificial','both','flower'].includes(o);
+const hasFreshOpt=o=>['fresh','both','flower'].includes(o);
+const FLOWER_OPT_LABEL={none:'なし',fresh:'生花',artificial:'造花',both:'生花と造花の両方',flower:'生花と造花の両方'};
+const flowerItemsFor=o=>FLOWER_ITEMS.filter(i=>o==='fresh'?i.includes('生花'):o==='artificial'?i.includes('造花'):true);
 const FLOWER_ITEMS=['生花ミニブーケ 5,500円（税込）','生花アレンジ（2個） 27,500円（税込）','造花アレンジ（2個）＋ミニブーケ 16,500円（税込）','造花ミニブーケ 3,300円（税込）'];
 // ★種類（複数選択可）。どのアイテムを選んだ場合も、この5つから選んでもらう
 const KIND_OPTIONS=['Simple','Natural','Cute','Cool','Leave it to rih'];
@@ -399,7 +404,7 @@ function daysUntil(ymd){if(!/^\d{4}-\d{2}-\d{2}$/.test(ymd||''))return null;retu
 // 花束なし（スタッフ選択済み）のお客様は、仕入れ後でもロックしない
 function lockedC(c){
   const st=c.sectionSentStatus||{};
-  if(st.optionsFixed&&c.flowerOption!=='flower'&&!st.flower)return false;
+  if(st.optionsFixed&&!hasFreshOpt(c.flowerOption))return false; // 花束なし・造花のみは、仕入れ後でもロックしない
   return isLockedYmd(c.shootDate);
 }
 function isLockedYmd(ymd){const d=daysUntil(ymd);return d!==null&&d<=PURCHASE_LOCK_DAYS;}
@@ -440,7 +445,7 @@ function checkOrderRules(ymd,source,delivery){
   return out;
 }
 // 注意画面（警告）。okText＋cancelText＝選べる警告／okTextだけ＝閉じるだけの警告。true＝続ける
-function noticeDialog({title,items,okText,cancelText}){
+function noticeDialog({title,items,okText,cancelText,altText}){
   return new Promise(res=>{
     const ov=document.createElement('div');
     ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -448,8 +453,8 @@ function noticeDialog({title,items,okText,cancelText}){
     ov.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:420px;width:100%;padding:22px 20px;max-height:85vh;overflow:auto;font-family:'Noto Sans JP',sans-serif">
       <div style="font-size:16px;font-weight:500;color:var(--error);margin-bottom:12px">⚠️ ${escH(title)}</div>
       <div style="font-size:13px;line-height:1.8;color:var(--dark)">${(items||[]).map(t=>`<div style="background:#FDECEA;border-left:3px solid var(--error);padding:8px 10px;border-radius:6px;margin-bottom:8px">${escH(t)}</div>`).join('')}</div>
-      <div style="display:flex;gap:8px;margin-top:14px">${cancelText?`<button data-v="0" style="${bs}background:var(--dark);color:#fff;border:none">${escH(cancelText)}</button>`:''}<button data-v="1" style="${bs}${cancelText?'background:#fff;color:var(--error);border:1px solid var(--error)':'background:var(--dark);color:#fff;border:none'}">${escH(okText||'閉じる')}</button></div></div>`;
-    ov.onclick=e=>{const b=e.target.closest('button');if(!b)return;ov.remove();res(b.dataset.v==='1');};
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">${altText?`<button data-v="2" style="${bs}flex-basis:100%;background:var(--accent);color:#fff;border:none">${escH(altText)}</button>`:''}${cancelText?`<button data-v="0" style="${bs}background:var(--dark);color:#fff;border:none">${escH(cancelText)}</button>`:''}<button data-v="1" style="${bs}${cancelText?'background:#fff;color:var(--error);border:1px solid var(--error)':'background:var(--dark);color:#fff;border:none'}">${escH(okText||'閉じる')}</button></div></div>`;
+    ov.onclick=e=>{const b=e.target.closest('button');if(!b)return;ov.remove();res(b.dataset.v==='1'?true:b.dataset.v==='2'?'alt':false);};
     document.body.appendChild(ov);
   });
 }
@@ -688,7 +693,7 @@ function goCommon(){
 // スタッフがURL発行時にオプションを選んでいる場合：オプション選択画面を出さず、選ばれた項目の回答欄だけを表示する
 async function startFixed(){
   sectionsToFill=[];
-  if(customer.flowerOption==='flower'&&!sectionStatus.flower)sectionsToFill.push('flower');
+  if(hasFlowerOpt(customer.flowerOption)&&!sectionStatus.flower)sectionsToFill.push('flower');
   const hairOpt=customer.hairOption||'none';
   if(hairOpt!=='none'&&!sectionStatus.hair){sectionsToFill.push('hair');hairOptionType=hairOpt;}
   if(sectionStatus.outfitChosen&&!sectionStatus.outfit)sectionsToFill.push('outfit');
@@ -722,7 +727,7 @@ async function renderFlower(){
     <div class="notice-box" style="${noticeStyle(SETTINGS.flower_notice_color||'pink')}">${SETTINGS.flower_notice||'🌸 rihでの花束をご希望ありがとうございます✨<br>お客様の雰囲気にあった花束をお作りします。※細かいお花のご指定はできかねますのでご了承ください🙇'}</div>
     <div class="field">
       <label>アイテム<span class="req">必須</span><span class="opt" style="margin-left:6px">複数選択可</span></label>
-      <div class="radio-grid col1">${FLOWER_ITEMS.map(o=>`<label class="choice-card chk"><input type="checkbox" name="fl-item" value="${escH(o)}"${(flowerData.items||[]).some(x=>x.item===o)?' checked':''} onchange="renderKindFields()"><div class="choice-label"><div class="choice-dot"></div>${escH(o)}</div></label>`).join('')}</div>
+      <div class="radio-grid col1">${flowerItemsFor(sectionStatus.optionsFixed?customer.flowerOption:'both').map(o=>`<label class="choice-card chk"><input type="checkbox" name="fl-item" value="${escH(o)}"${(flowerData.items||[]).some(x=>x.item===o)?' checked':''} onchange="renderKindFields()"><div class="choice-label"><div class="choice-dot"></div>${escH(o)}</div></label>`).join('')}</div>
       <div class="error-msg" id="err-fl-item">選択してください</div>
     </div>
     <div id="fl-art-wrap"></div>
@@ -1321,7 +1326,7 @@ function showAdminDash(){
       </div>
       <div style="font-size:11px;color:var(--muted);margin:10px 0 6px">▼ ご利用オプション（選んだものだけ、お客様の画面に回答欄が出ます）</div>
       <div class="create-fields">
-        <div class="create-field"><label>花束<span style="color:var(--error)">必須</span></label><select id="new-opt-flower"><option value="">選択してください</option><option value="flower">あり</option><option value="none">なし</option></select></div>
+        <div class="create-field"><label>花束<span style="color:var(--error)">必須</span></label><select id="new-opt-flower"><option value="">選択してください</option><option value="none">なし</option><option value="fresh">生花</option><option value="artificial">造花</option><option value="both">生花と造花の両方</option></select></div>
         <div class="create-field"><label>ヘアメイク<span style="color:var(--error)">必須</span></label><select id="new-opt-hair"><option value="">選択してください</option><option value="none">なし</option><option value="female">女性ヘアセット＆メイク</option><option value="male">男性ヘアセット</option><option value="both">両方（女性＋男性）</option></select></div>
         <div class="create-field"><label>衣装レンタル<span style="color:var(--error)">必須</span></label><select id="new-opt-outfit"><option value="">選択してください</option><option value="none">なし</option><option value="outfit">あり</option></select></div>
       </div>
@@ -1363,14 +1368,19 @@ async function createCustomer(){
   const orderInfo={orderer:gv('new-orderer'),source:gv('new-source'),shootTime:gv('new-time'),mgmtNo:gv('new-mgmt'),theme:gv('new-theme'),delivery:gv('new-delivery')};
   const optFlower=gv('new-opt-flower'),optHair=gv('new-opt-hair'),optOutfit=gv('new-opt-outfit');
   if(!optFlower||!optHair||!optOutfit){alert('花束・ヘアメイク・衣装レンタルの「あり／なし」を選んでください');return;}
-  const hasFlowerOpt=optFlower==='flower';
-  if(hasFlowerOpt&&(!orderInfo.orderer||!orderInfo.shootTime||!orderInfo.mgmtNo)){alert('花束ありの場合は、発注者・撮影時間・管理番号を入力してください');return;}
+  const flowerOn=optFlower!=='none';              // 花束あり（転記の対象）
+  const freshOn=hasFreshOpt(optFlower);           // 生花を含む（受付曜日・締切・仕入れ後ロックの対象）
+  if(flowerOn&&(!orderInfo.orderer||!orderInfo.shootTime||!orderInfo.mgmtNo)){alert('花束ありの場合は、発注者・撮影時間・管理番号を入力してください');return;}
   if(window._creating)return;
   window._creating=true;
   try{
   // 受付できない曜日／締切超過の場合は注意画面（スタッフの判断で、そのまま発行も可能）
-  const warns=hasFlowerOpt?checkOrderRules(shootDate,orderInfo.source,orderInfo.delivery):[]; // 受付ルールは花束（花材の仕入れ）に関するもの
-  if(warns.length&&!await noticeDialog({title:'受付できない可能性があります',items:warns,okText:'このままURLを発行する',cancelText:'戻って修正する'}))return;
+  const warns=freshOn?checkOrderRules(shootDate,orderInfo.source,orderInfo.delivery):[]; // 受付ルールは生花（花材の仕入れ）に関するもの。造花のみ・花束なしは対象外
+  if(warns.length){
+    const ans=await noticeDialog({title:'受付できない可能性があります',items:warns,okText:'このままURLを発行する',cancelText:'戻って修正する',altText:'造花プランでURLを発行する'});
+    if(!ans)return;
+    if(ans==='alt'){document.getElementById('new-opt-flower').value='artificial';window._creating=false;await createCustomer();return;}
+  }
   try{
     const r=await adminPost({action:'createCustomer',name,shootDate,optionsFixed:true,flowerOption:optFlower,hairOption:optHair,outfitOption:optOutfit,...orderInfo});
     if(!r.ok)throw new Error(r.error);
@@ -1572,7 +1582,7 @@ function toggleEdit(id){
   const answeredAny=!!(st.flower||st.hair||st.outfit||st.outfitChosen||st.outfitNotNeeded||st.allNotNeeded);
   const fixed=!!st.optionsFixed;
   const ov={
-    flower:c.flowerOption==='flower'?'flower':((fixed||answeredAny)?'none':''),
+    flower:hasFlowerOpt(c.flowerOption)?(c.flowerOption==='flower'?'both':c.flowerOption):((fixed||answeredAny)?'none':''),
     hair:(c.hairOption&&c.hairOption!=='none')?c.hairOption:((fixed||answeredAny)?'none':''),
     outfit:(st.outfit||st.outfitChosen)?'outfit':((fixed||answeredAny)?'none':'')
   };
@@ -1593,7 +1603,7 @@ function toggleEdit(id){
     </div>
     <div style="font-size:11px;color:var(--muted);margin:8px 0 6px">▼ ご利用オプション（回答済みの項目は変更できません）。<b>花束を「あり」にすると、すぐ転記先に行が入ります</b></div>
     <div class="create-fields">
-      ${f('opt-flower','花束',optSel('opt-flower',[['','選択してください'],['flower','あり'],['none','なし']],ov.flower,!!st.flower))}
+      ${f('opt-flower','花束',optSel('opt-flower',[['','選択してください'],['none','なし'],['fresh','生花'],['artificial','造花'],['both','生花と造花の両方']],ov.flower,!!st.flower))}
       ${f('opt-hair','ヘアメイク',optSel('opt-hair',[['','選択してください'],['none','なし'],['female','女性ヘアセット＆メイク'],['male','男性ヘアセット'],['both','両方（女性＋男性）']],ov.hair,!!st.hair))}
       ${f('opt-outfit','衣装レンタル',optSel('opt-outfit',[['','選択してください'],['none','なし'],['outfit','あり']],ov.outfit,!!st.outfit))}
     </div>
@@ -1617,14 +1627,19 @@ async function saveEdit(id){
   const gs=k=>document.getElementById(`ed-${k}-${id}`);
   const optF=gs('opt-flower')?.value,optH=gs('opt-hair')?.value,optO=gs('opt-outfit')?.value;
   if(!optF||!optH||!optO){alert('花束・ヘアメイク・衣装レンタルの「あり／なし」を選んでください');return;}
-  const wasFl=c.flowerOption==='flower';
-  const isFl=optF==='flower';
+  const wasFresh=hasFreshOpt(c.flowerOption);
+  const isFl=optF!=='none';                 // 花束あり（転記の対象）
+  const isFresh=hasFreshOpt(optF);          // 生花を含む（受付ルールの対象）
   if(!nf.name||!nf.shootDate||(isFl&&(!nf.orderer||!nf.shootTime||!nf.mgmtNo))){alert(isFl?'お客様名・撮影日・発注者・撮影時間・管理番号は必須です':'お客様名と撮影日は必須です');return;}
   const o=c.orderInfo||{};
   // 日付・発注元・受渡方法を変えたときだけ、受付ルールの注意画面を出す
-  if(isFl&&(nf.shootDate!==c.shootDate||nf.source!==o.source||nf.delivery!==o.delivery||!wasFl)){
-    const warns=isFl?checkOrderRules(nf.shootDate,nf.source,nf.delivery):[];
-    if(warns.length&&!await noticeDialog({title:'受付できない可能性があります',items:warns,okText:'このまま変更する',cancelText:'戻って修正する'}))return;
+  if(isFresh&&(nf.shootDate!==c.shootDate||nf.source!==o.source||nf.delivery!==o.delivery||!wasFresh)){
+    const warns=checkOrderRules(nf.shootDate,nf.source,nf.delivery);
+    if(warns.length){
+      const ans=await noticeDialog({title:'受付できない可能性があります',items:warns,okText:'このまま変更する',cancelText:'戻って修正する',altText:'造花プランに切り替えて変更する'});
+      if(!ans)return;
+      if(ans==='alt'){const sel=gs('opt-flower');if(sel&&!sel.disabled)sel.value='artificial';await saveEdit(id);return;}
+    }
   }
   const btn=document.getElementById('ed-save-'+id);if(btn){btn.disabled=true;btn.textContent='保存中…';}
   try{
