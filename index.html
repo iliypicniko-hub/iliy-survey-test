@@ -533,17 +533,12 @@ async function initClient(id){
     if(!r.ok)throw new Error(r.error);
     customer=r.data;sectionStatus=customer.sectionSentStatus||{};
     document.getElementById('client-header-sub').textContent=customer.name+' 様の事前アンケート';
-    if(customer.cancelled){showCancelledPage();return;}
     renderCommon();
   }catch(e){
     document.getElementById('form-main').innerHTML='<div style="text-align:center;padding:60px 0;color:var(--muted);font-size:14px">URLが無効か読み込みに失敗しました。</div>';
   }
 }
 
-function showCancelledPage(){
-  updateProgressEmpty();
-  document.getElementById('form-main').innerHTML='<div class="thankyou"><div class="thankyou-icon" style="background:var(--muted)">!</div><h2>このご予約はキャンセルされています</h2><p>ご不明な点がございましたら、スタジオまでお問い合わせください。</p></div>';
-}
 async function renderSelector(){
   if(sectionStatus.optionsFixed){renderCommon();return;}
   if(!settingsLoaded)await loadSettings();
@@ -1166,7 +1161,7 @@ async function submitSection(section){
     const result=await apiPost(payload);
     document.getElementById('sending-overlay').classList.remove('show');
     if(result.ok){sectionStatus[section]=true;showSectionDone(section);}
-    else if(result.error==='locked'||result.error==='cancelled'){
+    else if(result.error==='locked'){
       if(btn)btn.disabled=false;
       await noticeDialog({title:result.error==='locked'?'変更できません':'送信できません',items:[result.message||'送信できませんでした。','お手数ですが、スタジオまでご連絡ください。'],okText:'閉じる'});
     }
@@ -1293,10 +1288,9 @@ function isAllAnswered(c){
   return(!needsFlower||ss.flower)&&(!needsHair||ss.hair)&&outfitDone;
 }
 function getAlertDays(){return parseInt(SETTINGS.alert_days||'7',10);}
-// 対応済み または キャンセル済み
-function isDoneC(c){return !!(c.completed||c.cancelledAt);}
+function isDoneC(c){return !!c.completed;}
 function isUrgent(c){
-  if(!c.shootDate||c.completed||c.cancelledAt)return false;
+  if(!c.shootDate||c.completed)return false;
   const days=getAlertDays();
   const shoot=new Date(c.shootDate);
   const now=new Date();
@@ -1306,6 +1300,7 @@ function isUrgent(c){
 }
 
 function showAdminDash(){
+  listQuery="";
   const pendingItems=allCustomers.filter(c=>!isDoneC(c));
   const doneItems=allCustomers.filter(c=>isDoneC(c));
   const urgentItems=pendingItems.filter(c=>isUrgent(c));
@@ -1348,7 +1343,7 @@ function showAdminDash(){
     </div>
     <div class="dashboard">
       <div class="dash-card pending" onclick="showAdminList('pending')"><div class="dash-count">${pendingItems.length}</div><div class="dash-label">要確認</div><div class="dash-sub">未回答・回答済み未対応</div></div>
-      <div class="dash-card done" onclick="showAdminList('done')"><div class="dash-count">${doneItems.length}</div><div class="dash-label">対応済み</div><div class="dash-sub">確認完了・キャンセル</div></div>
+      <div class="dash-card done" onclick="showAdminList('done')"><div class="dash-count">${doneItems.length}</div><div class="dash-label">対応済み</div><div class="dash-sub">確認完了</div></div>
     </div>`;
 }
 
@@ -1401,9 +1396,12 @@ function showAdminList(type){
   const title=type==='pending'?'要確認':'対応済み';
   renderAdminList(type,baseItems);
 }
-function renderAdminList(type,baseItems){
-  // 絞り込み
+let listQuery='';
+function normQ(t){return String(t||'').normalize('NFKC').toLowerCase().replace(/[\s　]+/g,'').replace(/[ァ-ヶ]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0x60));}
+function listItemsFor(type,baseItems){
   let items=[...baseItems];
+  const q=normQ(listQuery);
+  if(q)items=items.filter(c=>normQ(c.name).includes(q)||normQ(c.orderInfo&&c.orderInfo.mgmtNo).includes(q));
   if(listFilter==='flower')items=items.filter(c=>c.sectionSentStatus?.flower);
   else if(listFilter==='hair')items=items.filter(c=>c.sectionSentStatus?.hair);
   else if(listFilter==='outfit')items=items.filter(c=>c.sectionSentStatus?.outfit);
@@ -1411,12 +1409,27 @@ function renderAdminList(type,baseItems){
   // 並び替え
   if(listSort==='shootDate')items.sort((a,b)=>new Date(a.shootDate)-new Date(b.shootDate));
   else if(listSort==='createdAt')items.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  return items;
+}
+function listCardsHtml(items){
+  return items.length===0?'<p style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px">該当するお客様はいません</p>':items.map(buildAdminCard).join('');
+}
+function onListSearch(type,v){
+  listQuery=v;
+  const base=type==='pending'?allCustomers.filter(c=>!isDoneC(c)):allCustomers.filter(c=>isDoneC(c));
+  const items=listItemsFor(type,base);
+  document.getElementById('list-count').textContent=items.length;
+  document.getElementById('admin-cards').innerHTML=listCardsHtml(items);
+}
+function renderAdminList(type,baseItems){
+  const items=listItemsFor(type,baseItems);
   const title=type==='pending'?'要確認':'対応済み';
   document.getElementById('admin-wrap').innerHTML=`
     <div class="list-header">
       <button class="btn-back-list" onclick="showAdminDash()">← トップへ</button>
-      <span class="list-title">${title}（${items.length}件）</span>
+      <span class="list-title">${title}（<span id="list-count">${items.length}</span>件）</span>
     </div>
+    <div style="margin-bottom:12px"><input type="search" id="list-search" placeholder="🔍 お名前で検索（管理番号もOK）" value="${escH(listQuery)}" oninput="onListSearch('${type}',this.value)" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:14px;background:var(--warm-white)"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
       <select onchange="listSort=this.value;showAdminList('${type}')" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;background:var(--warm-white);cursor:pointer;">
         <option value="shootDate"${listSort==='shootDate'?' selected':''}>📅 撮影日が近い順</option>
@@ -1430,7 +1443,7 @@ function renderAdminList(type,baseItems){
         <option value="outfit"${listFilter==='outfit'?' selected':''}>👗 衣装回答済み</option>
       </select>
     </div>
-    ${items.length===0?'<p style="text-align:center;padding:40px 0;color:var(--muted);font-size:14px">該当するお客様はいません</p>':items.map(buildAdminCard).join('')}`;
+    <div id="admin-cards">${listCardsHtml(items)}</div>`;
 }
 
 function buildAdminCard(c){
@@ -1446,11 +1459,9 @@ function buildAdminCard(c){
   // 全オプション対象外（花束なし・ヘアメイクなし・衣装も不要）の場合はURL非表示
   const allNotNeeded=ss.allNotNeeded===true;
   const badge=allNotNeeded?'<span style="display:inline-block;background:#E8E0D5;color:#7A7570;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">全対象外</span>':answered&&!c.completed?'<span class="badge-new">全回答済</span>':c.completed?'':!answered?'<span style="display:inline-block;background:#FEF3E2;color:#A05C00;border:1px solid #F5C26B;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:8px;">回答待ち</span>':'';
-  const cancelled=!!c.cancelledAt;
   const locked=lockedC(c);
   const urgentBadge=(urgent?'<span class="badge-urgent">⚠️ 期限注意</span>':'')+
-    (cancelled?'<span class="badge-urgent" style="background:var(--muted)">🚫 キャンセル済み</span>':
-     locked?'<span class="badge-urgent" style="background:#8A7A5A">🔒 仕入れ後（変更不可）</span>':'');
+    (locked?'<span class="badge-urgent" style="background:#8A7A5A">🔒 仕入れ後（変更不可）</span>':'');
   const secSt=(sec,label,needed)=>{
     // オプション未選択の場合は全部「未回答」表示
     if(!needed&&!noAnswerYet)return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px;color:var(--muted)">${label}</span><span style="font-size:10px;color:var(--muted)">対象外</span></div>`;
@@ -1460,12 +1471,12 @@ function buildAdminCard(c){
   return`<div class="admin-card${urgent?' urgent':''}" id="card-${c.id}">
     <div class="admin-card-head">
       <div><span class="admin-card-name">${c.name} 様</span>${badge}${urgentBadge}</div>
-      <div class="admin-card-meta">撮影日：${fmtD(c.shootDate)}　発行：${fmtDT(c.createdAt)}${cancelled?'　キャンセル：'+escH(c.cancelledAt):''}</div>
+      <div class="admin-card-meta">撮影日：${fmtD(c.shootDate)}　発行：${fmtDT(c.createdAt)}</div>
     </div>
     <div class="admin-card-body">
       ${c.transcribeError?`<div style="background:#FDECEA;border:1px solid #E8A0A0;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--error);line-height:1.7">⚠️ <b>転記先への書き込みに失敗しています（未転記）</b><br>${escH(c.transcribeError)}<br><button onclick="retranscribe('${c.id}',this)" style="margin-top:6px;padding:7px 14px;background:var(--error);border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:#fff;cursor:pointer;">再転記する</button></div>`:''}
       ${c.orderInfo&&c.orderInfo.mgmtNo?`<div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.7">発注者：${escH(c.orderInfo.orderer)}（${escH(c.orderInfo.source)}）／ 管理番号：${escH(c.orderInfo.mgmtNo)} ／ ${escH(c.orderInfo.shootTime)} ／ ${escH(c.orderInfo.theme)} ／ ${escH(c.orderInfo.delivery)}</div>`:''}
-      ${cancelled?'':`<div style="margin-bottom:12px"><button onclick="toggleEdit('${c.id}')" style="padding:7px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:var(--dark);cursor:pointer;">✏️ 撮影日・発注情報・オプションを変更</button></div><div id="edit-${c.id}"></div>`}
+      ${`<div style="margin-bottom:12px"><button onclick="toggleEdit('${c.id}')" style="padding:7px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:var(--dark);cursor:pointer;">✏️ 撮影日・発注情報・オプションを変更</button></div><div id="edit-${c.id}"></div>`}
       <div style="margin-bottom:14px">
         ${secSt('flower','🌷 花束',needsFlower)}
         ${secSt('hair','💄 ヘアメイク',needsHair)}
@@ -1493,8 +1504,7 @@ function buildAdminCard(c){
         <div id="det-${c.id}"></div>
       </div>
       <div class="action-btns">
-        ${!c.completed&&!cancelled?`<button class="btn-complete" onclick="completeCustomer('${c.id}')">✓ 対応済みにする</button>`:''}
-        ${!cancelled?`<button class="btn-delete" onclick="cancelCustomer('${c.id}')">🚫 キャンセル</button>`:''}
+        ${!c.completed?`<button class="btn-complete" onclick="completeCustomer('${c.id}')">✓ 対応済みにする</button>`:''}
         <button class="btn-delete" onclick="deleteCustomer('${c.id}')">🗑 削除</button>
       </div>
     </div>
@@ -1520,7 +1530,7 @@ async function reloadCustomers(){
   if(a.ok)allCustomers=a.data.reverse();
 }
 async function resetFailNotice(r){
-  if(r.error==='locked'||r.error==='cancelled')await noticeDialog({title:'リセットできません',items:[r.message||'リセットできませんでした。'],okText:'閉じる'});
+  if(r.error==='locked')await noticeDialog({title:'リセットできません',items:[r.message||'リセットできませんでした。'],okText:'閉じる'});
   else alert('リセットに失敗しました：'+(r.error||''));
 }
 async function resetAllOptions(cid,btn){
@@ -1645,7 +1655,7 @@ async function saveEdit(id){
   try{
     const r=await adminPost({action:'updateOrder',cid:id,...nf,optionsFixed:true,flowerOption:optF,hairOption:optH,outfitOption:optO});
     if(!r.ok){
-      if(r.error==='locked'||r.error==='cancelled'||r.error==='answered')await noticeDialog({title:'変更できません',items:[r.message||'変更できませんでした。'],okText:'閉じる'});
+      if(r.error==='locked'||r.error==='answered')await noticeDialog({title:'変更できません',items:[r.message||'変更できませんでした。'],okText:'閉じる'});
       else alert('変更に失敗しました：'+(r.error||''));
       if(btn){btn.disabled=false;btn.textContent='変更を保存する';}
       return;
@@ -1662,21 +1672,6 @@ async function saveEdit(id){
     else alert('変更しました。転記先にも反映されています。');
     showAdminList(isDoneC(c)?'done':'pending');
   }catch(e){alert('エラーが発生しました。');if(btn){btn.disabled=false;btn.textContent='変更を保存する';}}
-}
-// ── キャンセル ──
-async function cancelCustomer(id){
-  const c=allCustomers.find(x=>x.id===id);if(!c)return;
-  if(!confirm(c.name+' 様をキャンセルしますか？\n\n・転記先に「キャンセル」とキャンセル日時が記録されます\n・お客様はアンケートに回答できなくなります'))return;
-  try{
-    const r=await adminPost({action:'cancelCustomer',cid:id});
-    if(!r.ok)throw new Error(r.error);
-    const wasDone=isDoneC(c);
-    c.cancelledAt=r.cancelledAt;
-    c.transcribeError=(r.transcribe&&!r.transcribe.ok)?(r.transcribe.error||'失敗'):'';
-    transcribeMissingNotice(r);
-    if(r.transcribe&&!r.transcribe.ok)alert('キャンセルしましたが、転記先への反映に失敗しました。\n'+(r.transcribe.error||''));
-    showAdminList(wasDone?'done':'pending');
-  }catch(e){alert('キャンセルに失敗しました。');}
 }
 async function completeCustomer(id){
   if(!confirm('対応済みに移動しますか？'))return;
