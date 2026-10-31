@@ -54,6 +54,17 @@
   .radio-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
   .radio-grid.col1{grid-template-columns:1fr;}
   .radio-grid.col3{grid-template-columns:1fr 1fr 1fr;}
+  .kind-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .kind-card .kind-img{aspect-ratio:3/4;background:#f0f0ec;border-radius:10px 10px 0 0;overflow:hidden;position:relative;cursor:zoom-in;}
+  .kind-card .kind-img img{width:100%;height:100%;object-fit:cover;display:block;}
+  .kind-card .kind-img .kind-more{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;}
+  .kind-card .choice-label{border-radius:0 0 10px 10px;}
+  .kind-card.nophoto .choice-label{border-radius:10px;}
+  .fi-slot{border:1px solid var(--border);border-radius:10px;padding:10px;background:var(--warm-white);}
+  .fi-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+  .fi-thumb{position:relative;width:72px;height:96px;border-radius:6px;overflow:hidden;background:#f0f0ec;}
+  .fi-thumb img{width:100%;height:100%;object-fit:cover;}
+  .fi-thumb button{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:12px;}
   .choice-card{position:relative;cursor:pointer;}
   .choice-card input{position:absolute;opacity:0;width:0;height:0;}
   .choice-label{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--warm-white);border:1px solid var(--border);border-radius:8px;font-size:13px;transition:all .2s;cursor:pointer;line-height:1.4;}
@@ -327,10 +338,18 @@
   <div class="admin-tabs">
     <button class="admin-tab active" id="tab-customers" onclick="switchAdminTab('customers')">📋 回答一覧</button>
     <button class="admin-tab" id="tab-upload" onclick="switchAdminTab('upload')">📷 衣装画像</button>
+    <button class="admin-tab" id="tab-flowerimg" onclick="switchAdminTab('flowerimg')">🌷 お花画像</button>
     <button class="admin-tab" id="tab-settings" onclick="switchAdminTab('settings')">⚙️ 設定</button>
   </div>
   <div id="admin-tab-customers">
     <div class="admin-wrap" id="admin-wrap"><div class="loading-box">読み込み中…</div></div>
+  </div>
+  <div id="admin-tab-flowerimg" style="display:none">
+    <div class="upload-tab-wrap">
+      <div class="page-heading" style="margin-bottom:6px">お花の写真（造花）</div>
+      <div class="page-desc">造花の完成品の写真を登録します。お客様が種類を選ぶ画面に表示されます（1種類につき最大4枚。タップで拡大できます）。写真を追加・削除すると、すぐに反映されます。</div>
+      <div id="flowerimg-body"><div class="loading-box">読み込み中…</div></div>
+    </div>
   </div>
   <div id="admin-tab-settings" style="display:none">
     <div class="upload-tab-wrap" id="settings-wrap">
@@ -385,7 +404,13 @@ const FLOWER_OPT_LABEL={none:'なし',fresh:'生花',artificial:'造花',both:'�
 const flowerItemsFor=o=>FLOWER_ITEMS.filter(i=>o==='fresh'?i.includes('生花'):o==='artificial'?i.includes('造花'):true);
 const FLOWER_ITEMS=['生花ミニブーケ 5,500円（税込）','生花アレンジ（2個） 27,500円（税込）','造花アレンジ（2個）＋ミニブーケ 16,500円（税込）','造花ミニブーケ 3,300円（税込）'];
 // ★種類（複数選択可）。どのアイテムを選んだ場合も、この5つから選んでもらう
-const KIND_OPTIONS=['Simple','Natural','Cute','Cool','Leave it to rih'];
+const KIND_OPTIONS=['Simple','Natural','Cute','Cool','rihのお任せ'];
+// 造花は完成品が4種類（「おまかせ」なし）。写真を見ながら選んでもらう（写真は管理画面「お花画像」から登録）
+const ART_KINDS=['Simple','Natural','Cute','Cool'];
+const isArtItem=o=>String(o).includes('造花');
+const kindsFor=o=>isArtItem(o)?ART_KINDS:KIND_OPTIONS;
+const fiKey=(idx,kind)=>'flower_img_'+idx+'_'+kind;
+const fiList=(idx,kind)=>String((typeof SETTINGS!=='undefined'&&SETTINGS[fiKey(idx,kind)])||'').split(',').filter(Boolean);
 const ORDER_SOURCES=['iliy大阪','iliy東京'];
 const ORDER_THEMES=['マタニティ','お宮参り','ハーフバースデー','1歳BD','2歳BD','3歳七五三','5歳七五三','7歳七五三','家族写真','その他'];
 const ORDER_DELIVERY=['大阪スタジオへ搬入','ヤマト営業所止め（発送）','東京スタジオへ発送'];
@@ -773,9 +798,14 @@ function renderKindFields(){
   };
   wrap.innerHTML=FLOWER_ITEMS.map((o,idx)=>{
     if(!checked(o))return'';
-    const pk=prevKind(o,idx);
+    const pk0=prevKind(o,idx);const pk=pk0==='Leave it to rih'?'rihのお任せ':pk0; // 以前の表記も同じ選択肢として扱う
+    const art=isArtItem(o);
+    const body=art
+      ?`<div class="kind-grid">${kindsFor(o).map(k=>{const imgs=fiList(idx,k);return`<label class="choice-card kind-card${imgs.length?'':' nophoto'}">${imgs.length?`<div class="kind-img" onclick="event.preventDefault();event.stopPropagation();openOutfitLightbox(null,${escH(JSON.stringify(imgs))},0)"><img src="${escH(imgs[0])}" alt="${escH(k)}" loading="lazy" onerror="this.parentElement.style.display='none'">${imgs.length>1?`<span class="kind-more">写真 ${imgs.length}枚</span>`:''}</div>`:''}<input type="radio" name="fl-kind-${idx}" value="${escH(k)}"${pk===k?' checked':''}><div class="choice-label"><div class="choice-dot"></div>${escH(k)}</div></label>`;}).join('')}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">※写真をタップで拡大／下の名前をタップで選択</div>`
+      :`<div class="radio-grid col1">${kindsFor(o).map(k=>`<label class="choice-card"><input type="radio" name="fl-kind-${idx}" value="${escH(k)}"${pk===k?' checked':''}><div class="choice-label"><div class="choice-dot"></div>${escH(k)}</div></label>`).join('')}</div>`;
     return`<div class="field"><label>${escH(o)} の種類<span class="req">必須</span></label>
-      <div class="radio-grid col1">${KIND_OPTIONS.map(k=>`<label class="choice-card"><input type="radio" name="fl-kind-${idx}" value="${escH(k)}"${pk===k?' checked':''}><div class="choice-label"><div class="choice-dot"></div>${escH(k)}</div></label>`).join('')}</div>
+      ${body}
       <div class="error-msg" id="err-fl-kind-${idx}">選択してください</div></div>`;
   }).join('');
 }
@@ -1921,11 +1951,75 @@ async function initSalon(id,section){
 let currentAdminTab = 'customers';
 function switchAdminTab(tab) {
   currentAdminTab = tab;
-  ['customers','upload','settings'].forEach(t => {
+  ['customers','upload','flowerimg','settings'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', tab === t);
     document.getElementById('admin-tab-'+t).style.display = tab === t ? '' : 'none';
   });
   if(tab === 'settings') loadSettingsTab();
+  if(tab === 'flowerimg') loadFlowerImgTab();
+}
+
+// ── お花画像（造花の完成品の写真） ──
+async function loadFlowerImgTab(){
+  const w=document.getElementById('flowerimg-body');
+  try{const r=await adminGet({action:'getSettings'});if(!r.ok)throw new Error(r.error);Object.assign(SETTINGS,r.data);settingsLoaded=true;renderFlowerImgTab();}
+  catch(e){w.innerHTML='<div class="loading-box">読み込みに失敗しました。「更新」を押してください。</div>';}
+}
+function renderFlowerImgTab(){
+  const w=document.getElementById('flowerimg-body');
+  w.innerHTML=FLOWER_ITEMS.map((o,idx)=>!isArtItem(o)?'':`
+    <div style="margin-bottom:22px"><div style="font-size:14px;font-weight:500;margin-bottom:8px">${escH(o)}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
+      ${ART_KINDS.map(k=>{const L=fiList(idx,k);return`<div class="fi-slot" id="fi-${idx}-${k}"><div style="font-size:13px;font-weight:500">${escH(k)}</div>
+        <div class="fi-thumbs">${L.map((u,i)=>`<div class="fi-thumb"><img src="${escH(u)}" loading="lazy"><button title="削除" onclick="fiDel(${idx},'${k}',${i})">✕</button></div>`).join('')||'<span style="font-size:11px;color:var(--muted)">写真なし</span>'}</div>
+        ${L.length>=4?'<div style="font-size:11px;color:var(--muted)">最大4枚です</div>':`<label style="display:inline-block;padding:7px 12px;border:1px dashed var(--accent);border-radius:8px;font-size:12px;color:var(--accent);cursor:pointer">＋ 写真を追加<input type="file" accept="image/*" multiple style="display:none" onchange="fiAdd(${idx},'${k}',this)"></label>`}
+        <div id="fi-msg-${idx}-${k}" style="font-size:11px;color:var(--muted);margin-top:4px"></div></div>`;}).join('')}
+      </div></div>`).join('');
+}
+function fiResize(file,max=1200){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onerror=rej;
+    fr.onload=e=>{
+      const im=new Image();
+      im.onerror=rej;
+      im.onload=()=>{
+        const sc=Math.min(1,max/Math.max(im.width,im.height));
+        const c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        res(c.toDataURL('image/jpeg',0.85));
+      };
+      im.src=e.target.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+async function fiSave(idx,kind,list){
+  const r=await adminPost({action:'saveSetting',key:fiKey(idx,kind),value:list.join(',')});
+  if(!r.ok)throw new Error(r.error||'save failed');
+  SETTINGS[fiKey(idx,kind)]=list.join(',');
+}
+async function fiAdd(idx,kind,input){
+  const files=[...input.files];input.value='';
+  const msg=document.getElementById(`fi-msg-${idx}-${kind}`);
+  const list=fiList(idx,kind);
+  try{
+    for(const f of files){
+      if(list.length>=4)break;
+      if(msg)msg.textContent='アップロード中…';
+      const b64=await fiResize(f);
+      const r=await adminPost({action:'uploadOutfitImage',b64,filename:f.name});
+      if(!r.ok)throw new Error(r.error||'upload failed');
+      list.push(r.url);
+      await fiSave(idx,kind,list);
+    }
+    renderFlowerImgTab();
+  }catch(e){if(msg)msg.textContent='失敗しました：'+(e.message||'');else alert('失敗しました');renderFlowerImgTab();}
+}
+async function fiDel(idx,kind,i){
+  if(!confirm('この写真を削除しますか？'))return;
+  const list=fiList(idx,kind);list.splice(i,1);
+  try{await fiSave(idx,kind,list);renderFlowerImgTab();}catch(e){alert('削除に失敗しました');}
 }
 
 async function loadSettingsTab() {
