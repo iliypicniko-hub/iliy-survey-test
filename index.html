@@ -406,6 +406,7 @@ const FLOWER_ITEMS=['生花ミニブーケ 5,500円（税込）','生花アレ�
 // ★種類（複数選択可）。どのアイテムを選んだ場合も、この5つから選んでもらう
 const KIND_OPTIONS=['Simple','Natural','Cute','Cool','rihのお任せ'];
 // 造花は完成品が4種類（「おまかせ」なし）。写真を見ながら選んでもらう（写真は管理画面「お花画像」から登録）
+const FLOWER_NOTICE_ART_DEFAULT='🌸 rihでの花束をご希望ありがとうございます✨<br>造花の完成品の中から、お好みの種類をお選びください。写真をタップすると拡大できます。';
 const ART_KINDS=['シンプル','ソフト','ニュアンス'];
 const isArtItem=o=>String(o).includes('造花');
 const kindsFor=o=>isArtItem(o)?ART_KINDS:KIND_OPTIONS;
@@ -742,11 +743,12 @@ async function renderFlower(){
   if(!settingsLoaded) await loadSettings();
   updateProgressFlow('flower');
   const s=flowerStepList[currentStep];
+  const artOnly=!!sectionStatus.optionsFixed&&customer.flowerOption==='artificial'; // 造花のみ：生花向けの注意書きは出さない
   const m=document.getElementById('form-main');
   if(s==='fl-main')m.innerHTML=`<div class="fade-in">
     <div class="section-badge flower">🌷 花束オプション</div>
     <div class="page-heading">花束のご要望</div>
-    <div class="notice-box" style="${noticeStyle(SETTINGS.flower_notice_color||'pink')}">${SETTINGS.flower_notice||'🌸 rihでの花束をご希望ありがとうございます✨<br>お客様の雰囲気にあった花束をお作りします。※細かいお花のご指定はできかねますのでご了承ください🙇'}</div>
+    <div class="notice-box" style="${noticeStyle(artOnly?(SETTINGS.flower_notice_art_color||'pink'):(SETTINGS.flower_notice_color||'pink'))}">${artOnly?(SETTINGS.flower_notice_art||FLOWER_NOTICE_ART_DEFAULT):`${SETTINGS.flower_notice||'🌸 rihでの花束をご希望ありがとうございます✨<br>お客様の雰囲気にあった花束をお作りします。※細かいお花のご指定はできかねますのでご了承ください🙇'}`}</div>
     <div class="field">
       <label>アイテム<span class="req">必須</span><span class="opt" style="margin-left:6px">複数選択可</span></label>
       <div class="radio-grid col1">${flowerItemsFor(sectionStatus.optionsFixed?customer.flowerOption:'both').map(o=>`<label class="choice-card chk"><input type="checkbox" name="fl-item" value="${escH(o)}"${(flowerData.items||[]).some(x=>x.item===o)?' checked':''} onchange="renderKindFields()"><div class="choice-label"><div class="choice-dot"></div>${escH(o)}</div></label>`).join('')}</div>
@@ -2063,6 +2065,7 @@ async function loadSettingsTab() {
     ];
 
     const fields = [
+      { key:'flower_notice_art', label:'🌷 花束 注意書き（造花のみのお客様用）', colorKey:'flower_notice_art_color', default:FLOWER_NOTICE_ART_DEFAULT },
       { key:'flower_notice', label:'🌷 花束 注意書き', colorKey:'flower_notice_color', default:'🌸 rihでの花束をご希望ありがとうございます✨<br>お客様の雰囲気にあった花束をお作りします。※細かいお花のご指定はできかねますのでご了承ください🙇' },
       { key:'hair_notice', label:'💄 ヘアメイク 注意書き', colorKey:'hair_notice_color', default:'🔶 つけまつげ、アイプチ・メザイク、金箔やラメ・グリッター、リボン、パールシールなどは撮影日当日お持ち込みください。<br><br>🔶 メイクアイテムのお持ち込みは自由です。敏感肌の方は普段使用のアイテムをお持ち込みください。<br><br>＜ご注意＞ 撮影中のヘアメイクチェンジは承っておりません。' },
       { key:'outfit_notice', label:'👗 衣装レンタル 注意書き', colorKey:'outfit_notice_color', default:'プラン内ではメインで撮影される方の<strong>1コーデ分のみ無料</strong>でレンタルできます（例：トップス1着＋パンツ1着）。<br>別でもう1コーデ追加されたい場合は、別途 <strong>¥3,300</strong> となります。' },
