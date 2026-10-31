@@ -409,6 +409,9 @@ const KIND_OPTIONS=['Simple','Natural','Cute','Cool','rihのお任せ'];
 const FLOWER_NOTICE_ART_DEFAULT='🌸 rihでの花束をご希望ありがとうございます✨<br>造花の完成品の中から、お好みの種類をお選びください。写真をタップすると拡大できます。';
 const ART_KINDS=['シンプル','ソフト','ニュアンス'];
 const isArtItem=o=>String(o).includes('造花');
+const isSetItem=o=>isArtItem(o)&&String(o).includes('アレンジ'); // 造花アレンジ＋ミニブーケのセット（アレンジとミニブーケで別々に種類を選ぶ）
+const ART_MINI_IDX=()=>FLOWER_ITEMS.findIndex(x=>isArtItem(x)&&!isSetItem(x)); // ミニブーケの写真は、単品とセットで共通
+const SET_KIND_RE=/^アレンジ：(.+)／ミニブーケ：(.+)$/;
 const kindsFor=o=>isArtItem(o)?ART_KINDS:KIND_OPTIONS;
 const fiKey=(idx,kind)=>'flower_img_'+idx+'_'+kind;
 const fiList=(idx,kind)=>String((typeof SETTINGS!=='undefined'&&SETTINGS[fiKey(idx,kind)])||'').split(',').filter(Boolean);
@@ -802,6 +805,7 @@ function renderKindFields(){
   const shared=freshChecked.length>1; // 生花を2つとも選んだ場合は、種類を1つに統一する
   const radios=(name,list,pk)=>`<div class="radio-grid col1">${list.map(k=>`<label class="choice-card"><input type="radio" name="${name}" value="${escH(k)}"${pk===k?' checked':''}><div class="choice-label"><div class="choice-dot"></div>${escH(k)}</div></label>`).join('')}</div>`;
   const normK=k=>k==='Leave it to rih'?'rihのお任せ':k;
+  const artGrid=(name,photoIdx,pk)=>`<div class="kind-grid">${ART_KINDS.map(k=>{const imgs=fiList(photoIdx,k);return`<label class="choice-card kind-card${imgs.length?'':' nophoto'}">${imgs.length?`<div class="kind-img" onclick="event.preventDefault();event.stopPropagation();openOutfitLightbox(null,${escH(JSON.stringify(imgs))},0)"><img src="${escH(imgs[0])}" alt="${escH(k)}" loading="lazy" onerror="this.parentElement.style.display='none'">${imgs.length>1?`<span class="kind-more">写真 ${imgs.length}枚</span>`:''}</div>`:''}<input type="radio" name="${name}" value="${escH(k)}"${pk===k?' checked':''}><div class="choice-label"><div class="choice-dot"></div>${escH(k)}</div></label>`;}).join('')}</div>`;
   let sharedHtml='';
   if(shared){
     const dom=document.querySelector('input[name="fl-kind-fresh"]:checked');
@@ -815,6 +819,19 @@ function renderKindFields(){
   const rest=  FLOWER_ITEMS.map((o,idx)=>{
     if(!checked(o))return'';
     if(shared&&!isArtItem(o))return'';
+    if(isSetItem(o)){ // セット：アレンジとミニブーケで、別々に種類を選ぶ
+      const saved=(flowerData.items||[]).find(x=>x.item===o);const m=saved&&String(saved.kind).match(SET_KIND_RE);
+      const dv=n=>document.querySelector(`input[name="${n}"]:checked`)?.value||'';
+      const pa=dv('fl-kind-'+idx+'a')||(m?m[1]:''),pb=dv('fl-kind-'+idx+'b')||(m?m[2]:'');
+      return`<div class="field"><label>${escH(o)} の種類<span class="req">必須</span></label>
+        <div style="font-size:12px;color:var(--muted);margin:2px 0 6px">アレンジ（2個）の種類</div>
+        ${artGrid('fl-kind-'+idx+'a',idx,pa)}
+        <div class="error-msg" id="err-fl-kind-${idx}a">選択してください</div>
+        <div style="font-size:12px;color:var(--muted);margin:14px 0 6px">ミニブーケの種類</div>
+        ${artGrid('fl-kind-'+idx+'b',ART_MINI_IDX(),pb)}
+        <div class="error-msg" id="err-fl-kind-${idx}b">選択してください</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">※アレンジとミニブーケは、別々の種類を選べます。写真をタップで拡大／下の名前をタップで選択</div></div>`;
+    }
     const pk0=prevKind(o,idx);const pk=pk0==='Leave it to rih'?'rihのお任せ':pk0; // 以前の表記も同じ選択肢として扱う
     const art=isArtItem(o);
     const body=art
@@ -838,6 +855,14 @@ function goFlower(){
     FLOWER_ITEMS.forEach((o,idx)=>{
       if(!onItems.includes(o))return;
       if(sharedFresh&&!isArtItem(o)){items.push({item:o,kind:sharedKind});return;}
+      if(isSetItem(o)){
+        const ka=document.querySelector(`input[name="fl-kind-${idx}a"]:checked`)?.value||'',kb=document.querySelector(`input[name="fl-kind-${idx}b"]:checked`)?.value||'';
+        document.getElementById('err-fl-kind-'+idx+'a')?.classList.toggle('show',!ka);
+        document.getElementById('err-fl-kind-'+idx+'b')?.classList.toggle('show',!kb);
+        if(!ka||!kb)kindNg=true;
+        items.push({item:o,kind:(ka&&kb)?'アレンジ：'+ka+'／ミニブーケ：'+kb:''});
+        return;
+      }
       const kind=document.querySelector(`input[name="fl-kind-${idx}"]:checked`)?.value||'';
       items.push({item:o,kind});
       document.getElementById('err-fl-kind-'+idx)?.classList.toggle('show',!kind);
@@ -1990,7 +2015,7 @@ async function loadFlowerImgTab(){
 function renderFlowerImgTab(){
   const w=document.getElementById('flowerimg-body');
   w.innerHTML=FLOWER_ITEMS.map((o,idx)=>!isArtItem(o)?'':`
-    <div style="margin-bottom:22px"><div style="font-size:14px;font-weight:500;margin-bottom:8px">${escH(o)}</div>
+    <div style="margin-bottom:22px"><div style="font-size:14px;font-weight:500;margin-bottom:2px">${isSetItem(o)?'造花アレンジ（2個）の写真':'造花ミニブーケの写真'}</div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">${isSetItem(o)?'「アレンジとミニブーケのセット」の、アレンジ部分に表示されます':'単品の「造花ミニブーケ」と、セットのミニブーケ部分の両方に表示されます'}</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
       ${ART_KINDS.map(k=>{const L=fiList(idx,k);return`<div class="fi-slot" id="fi-${idx}-${k}"><div style="font-size:13px;font-weight:500">${escH(k)}</div>
         <div class="fi-thumbs">${L.map((u,i)=>`<div class="fi-thumb"><img src="${escH(u)}" loading="lazy"><button title="削除" onclick="fiDel(${idx},'${k}',${i})">✕</button></div>`).join('')||'<span style="font-size:11px;color:var(--muted)">写真なし</span>'}</div>
