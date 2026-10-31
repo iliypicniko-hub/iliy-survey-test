@@ -406,7 +406,7 @@ const FLOWER_ITEMS=['生花ミニブーケ 5,500円（税込）','生花アレ�
 // ★種類（複数選択可）。どのアイテムを選んだ場合も、この5つから選んでもらう
 const KIND_OPTIONS=['Simple','Natural','Cute','Cool','rihのお任せ'];
 // 造花は完成品が4種類（「おまかせ」なし）。写真を見ながら選んでもらう（写真は管理画面「お花画像」から登録）
-const ART_KINDS=['Simple','Natural','Cute','Cool'];
+const ART_KINDS=['シンプル','ソフト','ニュアンス'];
 const isArtItem=o=>String(o).includes('造花');
 const kindsFor=o=>isArtItem(o)?ART_KINDS:KIND_OPTIONS;
 const fiKey=(idx,kind)=>'flower_img_'+idx+'_'+kind;
