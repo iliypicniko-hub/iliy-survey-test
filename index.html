@@ -796,8 +796,23 @@ function renderKindFields(){
     if(dom)return dom.value;
     const f=(flowerData.items||[]).find(x=>x.item===o);return f?f.kind:'';
   };
-  wrap.innerHTML=FLOWER_ITEMS.map((o,idx)=>{
+  const freshChecked=FLOWER_ITEMS.map((o,idx)=>({o,idx})).filter(x=>!isArtItem(x.o)&&checked(x.o));
+  const shared=freshChecked.length>1; // 生花を2つとも選んだ場合は、種類を1つに統一する
+  const radios=(name,list,pk)=>`<div class="radio-grid col1">${list.map(k=>`<label class="choice-card"><input type="radio" name="${name}" value="${escH(k)}"${pk===k?' checked':''}><div class="choice-label"><div class="choice-dot"></div>${escH(k)}</div></label>`).join('')}</div>`;
+  const normK=k=>k==='Leave it to rih'?'rihのお任せ':k;
+  let sharedHtml='';
+  if(shared){
+    const dom=document.querySelector('input[name="fl-kind-fresh"]:checked');
+    const saved=(flowerData.items||[]).find(x=>!isArtItem(x.item)&&x.kind);
+    const pk=normK(dom?dom.value:(saved?saved.kind:''));
+    sharedHtml=`<div class="field"><label>${freshChecked.map(x=>escH(x.o)).join('<br>＋ ')}<br>の種類<span class="req">必須</span></label>
+      <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">※生花のアレンジとミニブーケは、同じ種類でお作りします（1つお選びください）</div>
+      ${radios('fl-kind-fresh',KIND_OPTIONS,pk)}
+      <div class="error-msg" id="err-fl-kind-fresh">選択してください</div></div>`;
+  }
+  const rest=  FLOWER_ITEMS.map((o,idx)=>{
     if(!checked(o))return'';
+    if(shared&&!isArtItem(o))return'';
     const pk0=prevKind(o,idx);const pk=pk0==='Leave it to rih'?'rihのお任せ':pk0; // 以前の表記も同じ選択肢として扱う
     const art=isArtItem(o);
     const body=art
@@ -808,14 +823,19 @@ function renderKindFields(){
       ${body}
       <div class="error-msg" id="err-fl-kind-${idx}">選択してください</div></div>`;
   }).join('');
+  wrap.innerHTML=sharedHtml+rest;
 }
 function goFlower(){
   if(currentStep===0){
     flowerData.note=document.getElementById('fl-note')?.value||'';
     const items=[];let kindNg=false;
+    const onItems=FLOWER_ITEMS.filter(o=>[...document.querySelectorAll('input[name="fl-item"]')].some(e=>e.value===o&&e.checked));
+    const sharedFresh=onItems.filter(o=>!isArtItem(o)).length>1; // 生花を2つ選んだ場合は、種類を1つに統一
+    const sharedKind=document.querySelector('input[name="fl-kind-fresh"]:checked')?.value||'';
+    if(sharedFresh){document.getElementById('err-fl-kind-fresh')?.classList.toggle('show',!sharedKind);if(!sharedKind)kindNg=true;}
     FLOWER_ITEMS.forEach((o,idx)=>{
-      const on=[...document.querySelectorAll('input[name="fl-item"]')].some(e=>e.value===o&&e.checked);
-      if(!on)return;
+      if(!onItems.includes(o))return;
+      if(sharedFresh&&!isArtItem(o)){items.push({item:o,kind:sharedKind});return;}
       const kind=document.querySelector(`input[name="fl-kind-${idx}"]:checked`)?.value||'';
       items.push({item:o,kind});
       document.getElementById('err-fl-kind-'+idx)?.classList.toggle('show',!kind);
