@@ -402,6 +402,10 @@ function jstToday(){return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia
 function ymdNum(s){const a=s.split('-');return Date.UTC(+a[0],+a[1]-1,+a[2]);}
 function daysUntil(ymd){if(!/^\d{4}-\d{2}-\d{2}$/.test(ymd||''))return null;return Math.round((ymdNum(ymd)-ymdNum(jstToday()))/86400000);}
 // 花束なし（スタッフ選択済み）のお客様は、仕入れ後でもロックしない
+// 撮影3日前以降の生花の変更・リセットは、rihへの確認が必要（確認ポップアップ。「続ける」で実行できる）
+async function rihConfirm(c,what){
+  return await noticeDialog({title:'rihへの確認が必要です',items:['撮影日（'+fmtD(c.shootDate)+'）の'+PURCHASE_LOCK_DAYS+'日前以降のため、花材の仕入れが済んでいる可能性があります。',what+'の前に、rih担当者に確認してください。'],okText:'rihに確認した・続ける',cancelText:'やめる'});
+}
 let lateNoticed=false;
 async function lateNotice(){
   if(lateNoticed)return;lateNoticed=true;
@@ -446,7 +450,7 @@ function checkOrderRules(ymd,source,delivery){
   if(dd<need){
     out.push(`受渡方法「${delivery}」の締切は撮影の${need}日前までです。`+(dd<0?'撮影日がすでに過ぎています。':dd===0?'撮影は本日です。':`撮影日（${label}）まであと${dd}日で、締切を過ぎています。`)+`花材の仕入れが撮影の${PURCHASE_LOCK_DAYS}日前のため、これを過ぎるとお受けできません。`);
   }
-  if(dd<=PURCHASE_LOCK_DAYS)out.push(`撮影の${PURCHASE_LOCK_DAYS}日前以降のため、花材の仕入れが済んでいる可能性があります。お客様には回答時に注意が表示されますが、回答はできます。`);
+  if(dd<=PURCHASE_LOCK_DAYS)out.push(`撮影の${PURCHASE_LOCK_DAYS}日前以降のため、花材の仕入れが済んでいる可能性があります。rihに確認してから進めてください（お客様の回答画面にも注意が出ますが、回答はできます）。`);
   return out;
 }
 // 注意画面（警告）。okText＋cancelText＝選べる警告／okTextだけ＝閉じるだけの警告。true＝続ける
@@ -1532,6 +1536,7 @@ async function resetFailNotice(r){
   else alert('リセットに失敗しました：'+(r.error||''));
 }
 async function resetAllOptions(cid,btn){
+  {const c0=allCustomers.find(x=>x.id===cid);if(c0&&lockedC(c0)&&!(await rihConfirm(c0,'リセット')))return;}
   if(!confirm('全ての回答をリセットします。\nお客様が最初からやり直せるようになります。\n（花束ありの場合、転記先のアイテム・種類・備考は空になります）'))return;
   btn.disabled=true;btn.textContent='処理中…';
   try{
@@ -1545,6 +1550,7 @@ async function resetAllOptions(cid,btn){
   }catch(e){alert('エラーが発生しました。');}
 }
 async function resetSection(cid,section,btn){
+  if(section==='flower'){const c0=allCustomers.find(x=>x.id===cid);if(c0&&lockedC(c0)&&!(await rihConfirm(c0,'花束のリセット')))return;}
   const label=section==='flower'?'花束':section==='hair'?'ヘアメイク':'衣装';
   if(!confirm(`「${label}」の回答をリセットしますか？\nお客様が再回答できるようになります。`+(section==='flower'?'\n（転記先のアイテム・種類・備考は空になります）':'')))return;
   btn.disabled=true;btn.textContent='処理中…';
@@ -1636,8 +1642,13 @@ async function saveEdit(id){
   const isFresh=hasFreshOpt(optF);          // 生花を含む（受付ルールの対象）
   if(!nf.name||!nf.shootDate||(isFl&&(!nf.orderer||!nf.shootTime||!nf.mgmtNo))){alert(isFl?'お客様名・撮影日・発注者・撮影時間・管理番号は必須です':'お客様名と撮影日は必須です');return;}
   const o=c.orderInfo||{};
+  const rulesCheck=isFresh&&(nf.shootDate!==c.shootDate||nf.source!==o.source||nf.delivery!==o.delivery||!wasFresh);
+  // 撮影3日前以降（変更前または変更後）で生花が関わる変更は、rihへの確認ポップアップ（下の受付ルールの注意に同じ内容が含まれる場合は、二重に出さない）
+  if((lockedC(c)||(isFresh&&isLockedYmd(nf.shootDate)))&&!(rulesCheck&&isLockedYmd(nf.shootDate)&&checkOrderRules(nf.shootDate,nf.source,nf.delivery).length)){
+    if(!(await rihConfirm(isLockedYmd(nf.shootDate)&&!lockedC(c)?{...c,shootDate:nf.shootDate}:c,'変更')))return;
+  }
   // 日付・発注元・受渡方法を変えたときだけ、受付ルールの注意画面を出す
-  if(isFresh&&(nf.shootDate!==c.shootDate||nf.source!==o.source||nf.delivery!==o.delivery||!wasFresh)){
+  if(rulesCheck){
     const warns=checkOrderRules(nf.shootDate,nf.source,nf.delivery);
     if(warns.length){
       const ans=await noticeDialog({title:'受付できない可能性があります',items:warns,okText:'このまま変更する',cancelText:'戻って修正する',altText:'造花プランに切り替えて変更する'});
